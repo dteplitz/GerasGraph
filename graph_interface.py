@@ -1,4 +1,3 @@
-import random
 import time
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage, RemoveMessage
@@ -6,12 +5,138 @@ from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
 from config import Config
-from typing import Dict, Any, Literal
+from typing import Dict, Any, Optional, Literal
 from log_manager import get_log_manager
+from datetime import datetime
+
+# Importar desde archivos separados
+from state_manager import StateManager, ConversationStatus
+from agents import NiñoAgent, AncianoAgent, SummarizerAgent, RouterAgent
+
+# We will use this model for both the conversation and the summarization
+model = ChatGroq(
+    model=Config.GROQ_MODEL,
+    temperature=Config.GROQ_TEMPERATURE
+)
 
 # State class to store messages and summary
 class State(MessagesState):
     summary: str
+    status: ConversationStatus
+    greeted: bool
+    reason: Optional[str]
+    question: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    user: Optional[str]
+
+# Define the logic to call the niño agent
+def call_niño_agent(state: State):
+    """Nodo que responde como un niño"""
+    print("---Niño Node---")
+    
+    # Get summary if it exists
+    summary = state.get("summary", "")
+    
+    # Create system message with summary context if available
+    if summary:
+        system_content = f"Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño.\n\nResumen de la conversación anterior: {summary}"
+    else:
+        system_content = "Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño."
+    
+    system_message = SystemMessage(content=system_content)
+    
+    # Prepare messages for the model
+    messages = [system_message] + state["messages"]
+    
+    response = model.invoke(messages)
+    return {"messages": [response], "updated_at": datetime.now()}
+
+# Define the logic to call the anciano agent
+def call_anciano_agent(state: State):
+    """Nodo que responde como un anciano"""
+    print("---Anciano Node---")
+    
+    # Get summary if it exists
+    summary = state.get("summary", "")
+    
+    # Create system message with summary context if available
+    if summary:
+        system_content = f"Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado.\n\nResumen de la conversación anterior: {summary}"
+    else:
+        system_content = "Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado."
+    
+    system_message = SystemMessage(content=system_content)
+    
+    # Prepare messages for the model
+    messages = [system_message] + state["messages"]
+    
+    response = model.invoke(messages)
+    return {"messages": [response], "updated_at": datetime.now()}
+
+# Define the logic to summarize the conversation
+def summarize_conversation(state: State):
+    """Nodo que resume la conversación"""
+    print("---Resumen de Conversación---")
+    
+    # Obtener el resumen existente si existe
+    summary = state.get("summary", "")
+    
+    # Crear el prompt de resumen
+    if summary:
+        summary_message = (
+            f"Este es el resumen de la conversación hasta ahora: {summary}\n\n"
+            "Extiende el resumen teniendo en cuenta los nuevos mensajes arriba:"
+        )
+    else:
+        summary_message = "Crea un resumen de la conversación arriba:"
+    
+    # Agregar el prompt a nuestro historial
+    messages = state["messages"] + [HumanMessage(content=summary_message)]
+    
+    response = model.invoke(messages)
+    
+    # Eliminar todos los mensajes excepto los 2 más recientes y agregar el resumen al estado
+    delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-2]]
+    
+    return {
+        "summary": response.content, 
+        "messages": delete_messages,
+        "updated_at": datetime.now()
+    }
+
+# Define the logic to route to random agent
+def route_to_random_agent(state: State) -> str:
+    """Función que decide aleatoriamente el siguiente nodo"""
+    import random
+    agents = ["niño", "anciano"]
+    selected = random.choice(agents)
+    
+    print(f"Router seleccionó: {selected}")
+    return selected
+
+# Determine whether to end or summarize the conversation
+def should_continue(state: State) -> Literal["summarize_conversation", "__end__"]:
+    """Determina si continuar la conversación o resumir
+    
+    SIGUE EL PATRÓN DEL EJEMPLO ORIGINAL:
+    - Si hay más de 6 mensajes: resumir y terminar
+    - Si hay 6 o menos mensajes: terminar directamente
+    """
+    messages = state["messages"]
+    
+    print(f"Evaluando continuar: {len(messages)} mensajes")
+    
+    # Si hay más de 6 mensajes, resumir la conversación
+    if len(messages) > 6:
+        print("¡Activando summary! Más de 6 mensajes")
+        return "summarize_conversation"
+    
+    # De lo contrario, terminar
+    print("Continuando conversación normal")
+    return END
+
+# Eliminar la función after_summary_route ya que no se necesita
 
 class GraphInterface:
     """Interfaz para manejar la lógica de LangGraph - Patrón Singleton"""
@@ -25,188 +150,40 @@ class GraphInterface:
         return cls._instance
     
     def __init__(self):
-        """Inicializar el modelo Groq y crear el grafo solo una vez"""
+        """Inicializar el grafo solo una vez"""
         if not self._initialized:
-            self.model = ChatGroq(
-                model=Config.GROQ_MODEL,
-                temperature=Config.GROQ_TEMPERATURE
-            )
             self.graph = self._create_graph()
             self.log_manager = get_log_manager()
+            self.state_manager = StateManager()
             self._initialized = True
-    
-    def _niño_node(self, state: State) -> Dict[str, Any]:
-        """Nodo que responde como un niño"""
-        start_time = time.time()
-        
-        try:
-            print("---Niño Node---")
-            
-            # Get summary if it exists
-            summary = state.get("summary", "")
-            
-            # Create system message with summary context if available
-            if summary:
-                system_content = f"Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño.\n\nResumen de la conversación anterior: {summary}"
-            else:
-                system_content = "Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño."
-            
-            system_message = SystemMessage(content=system_content)
-            
-            # Preparar el prompt completo para logging
-            prompt_messages = [system_message] + state["messages"]
-            prompt_text = "\n".join([f"{msg.type}: {msg.content}" for msg in prompt_messages])
-            
-            # Log estado antes del agente con el prompt completo
-            self.log_manager.log_before_agent("niño", state, prompt_text)
-            
-            response = self.model.invoke(prompt_messages)
-            result = {"messages": [response]}
-            
-            # Log estado después del agente con prompt y respuesta
-            processing_time = time.time() - start_time
-            self.log_manager.log_after_agent("niño", result, processing_time, response.content)
-            
-            return result
-            
-        except Exception as e:
-            # Log de error
-            processing_time = time.time() - start_time
-            self.log_manager.log_error("niño", e, state)
-            raise
-    
-    def _anciano_node(self, state: State) -> Dict[str, Any]:
-        """Nodo que responde como un anciano"""
-        start_time = time.time()
-        
-        try:
-            print("---Anciano Node---")
-            
-            # Get summary if it exists
-            summary = state.get("summary", "")
-            
-            # Create system message with summary context if available
-            if summary:
-                system_content = f"Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado.\n\nResumen de la conversación anterior: {summary}"
-            else:
-                system_content = "Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado."
-            
-            system_message = SystemMessage(content=system_content)
-            
-            # Preparar el prompt completo para logging
-            prompt_messages = [system_message] + state["messages"]
-            prompt_text = "\n".join([f"{msg.type}: {msg.content}" for msg in prompt_messages])
-            
-            # Log estado antes del agente con el prompt completo
-            self.log_manager.log_before_agent("anciano", state, prompt_text)
-            
-            response = self.model.invoke(prompt_messages)
-            result = {"messages": [response]}
-            
-            # Log estado después del agente con prompt y respuesta
-            processing_time = time.time() - start_time
-            self.log_manager.log_after_agent("anciano", result, processing_time, response.content)
-            
-            return result
-            
-        except Exception as e:
-            # Log de error
-            processing_time = time.time() - start_time
-            self.log_manager.log_error("anciano", e, state)
-            raise
-    
-    def _route_to_random(self, state: State) -> str:
-        """Función que decide aleatoriamente el siguiente nodo"""
-        agents = ["niño", "anciano"]
-        selected = random.choice(agents)
-        
-        print(f"Router seleccionó: {selected}")
-        return selected
-    
-    def _should_continue(self, state: State) -> Literal["summarize_conversation", "__end__"]:
-        """Determina si continuar la conversación o resumir"""
-        messages = state["messages"]
-        
-        # Si hay más de 6 mensajes, resumir la conversación
-        if len(messages) > 6:
-            return "summarize_conversation"
-        
-        # De lo contrario, terminar
-        return END
-    
-    def _summarize_conversation(self, state: State) -> Dict[str, Any]:
-        """Nodo que resume la conversación"""
-        start_time = time.time()
-        
-        try:
-            print("---Resumen de Conversación---")
-            
-            # Obtener el resumen existente si existe
-            summary = state.get("summary", "")
-            
-            # Crear el prompt de resumen
-            if summary:
-                summary_message = (
-                    f"Este es el resumen de la conversación hasta ahora: {summary}\n\n"
-                    "Extiende el resumen teniendo en cuenta los nuevos mensajes arriba:"
-                )
-            else:
-                summary_message = "Crea un resumen de la conversación arriba:"
-            
-            # Agregar el prompt a nuestro historial
-            messages = state["messages"] + [HumanMessage(content=summary_message)]
-            
-            # Preparar el prompt completo para logging
-            prompt_text = "\n".join([f"{msg.type}: {msg.content}" for msg in messages])
-            
-            # Log estado antes del agente con el prompt completo
-            self.log_manager.log_before_agent("summarize_conversation", state, prompt_text)
-            
-            response = self.model.invoke(messages)
-            
-            # Eliminar todos los mensajes excepto los 2 más recientes y agregar el resumen al estado
-            delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-2]]
-            
-            result = {"summary": response.content, "messages": delete_messages}
-            
-            # Log estado después del agente con prompt y respuesta
-            processing_time = time.time() - start_time
-            self.log_manager.log_after_agent("summarize_conversation", result, processing_time, response.content)
-            
-            return result
-            
-        except Exception as e:
-            # Log de error
-            processing_time = time.time() - start_time
-            self.log_manager.log_error("summarize_conversation", e, state)
-            raise
     
     def _create_graph(self):
         """Crear y compilar el grafo"""
         conn = sqlite3.connect(Config.DB_PATH, check_same_thread=False)
         memory = SqliteSaver(conn)
         
+        # Define a new graph
         workflow = StateGraph(State)
         
-        # Agregar nodos
-        workflow.add_node("niño", self._niño_node)
-        workflow.add_node("anciano", self._anciano_node)
-        workflow.add_node("summarize_conversation", self._summarize_conversation)
+        # Add nodes using the pure functions
+        workflow.add_node("niño", call_niño_agent)
+        workflow.add_node("anciano", call_anciano_agent)
+        workflow.add_node("summarize_conversation", summarize_conversation)
         
-        # Agregar edges con routing condicional
+        # Set the entrypoint with routing
         workflow.add_conditional_edges(
             START,
-            self._route_to_random,
+            route_to_random_agent,
             {
                 "niño": "niño",
                 "anciano": "anciano"
             }
         )
         
-        # Agregar edges condicionales para decidir si continuar o resumir
+        # Add conditional edges to decide whether to continue or summarize
         workflow.add_conditional_edges(
             "niño",
-            self._should_continue,
+            should_continue,
             {
                 "summarize_conversation": "summarize_conversation",
                 "__end__": END
@@ -215,24 +192,28 @@ class GraphInterface:
         
         workflow.add_conditional_edges(
             "anciano",
-            self._should_continue,
+            should_continue,
             {
                 "summarize_conversation": "summarize_conversation",
                 "__end__": END
             }
         )
         
-        # El nodo de resumen siempre termina
+        # The summarize node always ends (like in the original example)
         workflow.add_edge("summarize_conversation", END)
         
+        # Compile
         return workflow.compile(checkpointer=memory)
     
-    def process_message(self, message: str, session_id: str) -> Dict[str, Any]:
+    def process_message(self, message: str, session_id: str, user: Optional[str] = None) -> Dict[str, Any]:
         """Procesar un mensaje a través del grafo"""
         user_message = HumanMessage(content=message)
         
+        # Usar StateManager para crear el estado inicial
+        initial_state = self.state_manager.create_initial_state(user_message, user)
+        
         result = self.graph.invoke(
-            {"messages": [user_message], "summary": ""},
+            initial_state,
             config={"configurable": {"thread_id": session_id}}
         )
         
@@ -246,3 +227,24 @@ class GraphInterface:
             return "niño"
         else:
             return "anciano"
+    
+    # Métodos de conveniencia que delegan al StateManager
+    def update_status(self, state: State, new_status: ConversationStatus) -> State:
+        """Actualizar el status de la conversación"""
+        return self.state_manager.update_status(state, new_status)
+    
+    def set_greeted(self, state: State, greeted: bool = True) -> State:
+        """Marcar que se ha saludado al usuario"""
+        return self.state_manager.set_greeted(state, greeted)
+    
+    def set_reason(self, state: State, reason: str) -> State:
+        """Establecer la razón de la conversación"""
+        return self.state_manager.set_reason(state, reason)
+    
+    def set_question(self, state: State, question: str) -> State:
+        """Establecer la pregunta actual"""
+        return self.state_manager.set_question(state, question)
+    
+    def get_state_info(self, state: State) -> Dict[str, Any]:
+        """Obtener información resumida del estado"""
+        return self.state_manager.get_state_info(state)
