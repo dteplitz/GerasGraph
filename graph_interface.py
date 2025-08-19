@@ -210,9 +210,41 @@ class GraphInterface:
         """Procesar un mensaje a través del grafo"""
         user_message = HumanMessage(content=message)
         
-        # Usar StateManager para crear el estado inicial
-        initial_state = self.state_manager.create_initial_state(user_message, user)
+        # Intentar recuperar el estado existente del checkpoint
+        try:
+            # Obtener el estado actual del checkpoint
+            current_state = self.graph.get_state({"configurable": {"thread_id": session_id}})
+            
+            # Si hay estado existente, agregar solo el nuevo mensaje
+            if current_state and hasattr(current_state, 'values') and current_state.values:
+                # Convertir StateSnapshot a dict y preservar todos los campos
+                current_dict = dict(current_state.values)
+                
+                if current_dict.get("messages"):
+                    # Preservar todos los campos del estado existente
+                    initial_state = dict(current_dict)
+                    # Agregar el nuevo mensaje del usuario
+                    initial_state["messages"] = current_dict["messages"] + [user_message]
+                    # Actualizar timestamp
+                    initial_state["updated_at"] = datetime.now()
+                    
+                    # Si es el primer mensaje de la sesión, establecer el usuario
+                    if not initial_state.get("user") and user:
+                        initial_state["user"] = user
+                        
+                else:
+                    # Si no hay mensajes, crear estado nuevo
+                    initial_state = self.state_manager.create_initial_state(user_message, user)
+            else:
+                # Si no hay estado existente, crear uno nuevo
+                initial_state = self.state_manager.create_initial_state(user_message, user)
+                
+        except Exception as e:
+            # Si hay algún error al recuperar el estado, crear uno nuevo
+            print(f"⚠️ Error recuperando estado del checkpoint: {e}")
+            initial_state = self.state_manager.create_initial_state(user_message, user)
         
+        # Procesar el mensaje a través del grafo
         result = self.graph.invoke(
             initial_state,
             config={"configurable": {"thread_id": session_id}}
