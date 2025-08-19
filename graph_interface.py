@@ -1,6 +1,6 @@
 import time
 from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage, SystemMessage, RemoveMessage
+from langchain_core.messages import HumanMessage, SystemMessage, RemoveMessage, AIMessage
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
@@ -51,7 +51,7 @@ def call_niño_agent(state: State):
     messages = [system_message] + state["messages"]
     
     response = model.invoke(messages)
-    return {"messages": [response], "updated_at": datetime.now()}
+    return {"messages": [response]}
 
 # Define the logic to call the anciano agent
 def call_anciano_agent(state: State):
@@ -73,7 +73,21 @@ def call_anciano_agent(state: State):
     messages = [system_message] + state["messages"]
     
     response = model.invoke(messages)
-    return {"messages": [response], "updated_at": datetime.now()}
+    return {"messages": [response]}
+
+# Define the logic to greet the user
+def call_greet_agent(state: State):
+    """Nodo que saluda al usuario por primera vez"""
+    print("---Greet Node---")
+    
+    # Crear mensaje de bienvenida
+    welcome_message = AIMessage(content="Hola bienvenido. ¿En qué puedo ayudarte?")
+    
+    # Retornar el mensaje de bienvenida y marcar como saludado
+    return {
+        "messages": [welcome_message], 
+        "greeted": True
+    }
 
 # Define the logic to summarize the conversation
 def summarize_conversation(state: State):
@@ -102,13 +116,19 @@ def summarize_conversation(state: State):
     
     return {
         "summary": response.content, 
-        "messages": delete_messages,
-        "updated_at": datetime.now()
+        "messages": delete_messages
     }
 
-# Define the logic to route to random agent
-def route_to_random_agent(state: State) -> str:
-    """Función que decide aleatoriamente el siguiente nodo"""
+# Define the logic to route to the appropriate agent
+def route_to_agent(state: State) -> str:
+    """Función que decide el siguiente nodo basado en el estado"""
+    
+    # Si no se ha saludado al usuario, ir al nodo de saludo
+    if not state.get("greeted", False):
+        print("Router seleccionó: greet (primera vez)")
+        return "greet"
+    
+    # Si ya se saludó, elegir aleatoriamente entre niño y anciano
     import random
     agents = ["niño", "anciano"]
     selected = random.choice(agents)
@@ -153,9 +173,10 @@ class GraphInterface:
     def __init__(self):
         """Inicializar el grafo solo una vez"""
         if not self._initialized:
-            self.graph = self._create_graph()
             self.log_manager = get_log_manager()
             self.state_manager = StateManager()
+            # Crear el grafo
+            self.graph = self._create_graph()
             self._initialized = True
     
     def _create_graph(self):
@@ -167,6 +188,7 @@ class GraphInterface:
         workflow = StateGraph(State)
         
         # Add nodes using the pure functions
+        workflow.add_node("greet", call_greet_agent)
         workflow.add_node("niño", call_niño_agent)
         workflow.add_node("anciano", call_anciano_agent)
         workflow.add_node("summarize_conversation", summarize_conversation)
@@ -174,14 +196,18 @@ class GraphInterface:
         # Set the entrypoint with routing
         workflow.add_conditional_edges(
             START,
-            route_to_random_agent,
+            route_to_agent,
             {
+                "greet": "greet",
                 "niño": "niño",
                 "anciano": "anciano"
             }
         )
         
         # Add conditional edges to decide whether to continue or summarize
+        # El nodo greet siempre termina (solo saluda)
+        workflow.add_edge("greet", END)
+        
         workflow.add_conditional_edges(
             "niño",
             should_continue,
