@@ -19,14 +19,17 @@ class NiñoAgent(BaseAgent):
         """Procesar el estado y responder como un niño"""
         print("---Niño Node---")
         
+        # Importar los prompts específicos del agente niño
+        from prompts import NIÑO_BASE_PROMPT, NIÑO_WITH_SUMMARY_PROMPT
+        
         # Get summary if it exists
         summary = state.get("summary", "")
         
         # Create system message with summary context if available
         if summary:
-            system_content = f"Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño.\n\nResumen de la conversación anterior: {summary}"
+            system_content = NIÑO_WITH_SUMMARY_PROMPT.format(summary=summary)
         else:
-            system_content = "Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño."
+            system_content = NIÑO_BASE_PROMPT
         
         system_message = SystemMessage(content=system_content)
         

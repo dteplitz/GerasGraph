@@ -22,11 +22,14 @@ class AncianoAgent(BaseAgent):
         # Get summary if it exists
         summary = state.get("summary", "")
         
+        # Importar los prompts específicos del agente anciano
+        from prompts import ANCIANO_BASE_PROMPT, ANCIANO_WITH_SUMMARY_PROMPT
+        
         # Create system message with summary context if available
         if summary:
-            system_content = f"Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado.\n\nResumen de la conversación anterior: {summary}"
+            system_content = ANCIANO_WITH_SUMMARY_PROMPT.format(summary=summary)
         else:
-            system_content = "Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado."
+            system_content = ANCIANO_BASE_PROMPT
         
         system_message = SystemMessage(content=system_content)
         

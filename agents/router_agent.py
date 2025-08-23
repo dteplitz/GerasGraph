@@ -17,7 +17,8 @@ class RouterAgent:
     
     def route_to_random_agent(self, state: Dict[str, Any]) -> str:
         """Función que decide aleatoriamente el siguiente nodo"""
-        agents = ["niño", "anciano"]
+        #agents = ["niño", "anciano", "profesor"]
+        agents = ["profesor"]
         selected = random.choice(agents)
         
         print(f"Router seleccionó: {selected}")

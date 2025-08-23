@@ -20,8 +20,8 @@ class ChatService:
                 last_message = result["messages"][-1]
                 response_text = last_message.content
                 
-                # Determinar el tipo de agente
-                agent_type = self.graph_interface.get_agent_type(response_text)
+                # Obtener el tipo de agente directamente del estado (más eficiente)
+                agent_type = result.get("last_agent", "unknown")
                 
                 return {
                     "response": response_text,

@@ -11,7 +11,7 @@ from datetime import datetime
 
 # Importar desde archivos separados
 from state_manager import StateManager, ConversationStatus
-from agents import NiñoAgent, AncianoAgent, SummarizerAgent, RouterAgent
+from agents import NiñoAgent, AncianoAgent, ProfesorAgent, SummarizerAgent, RouterAgent
 
 # We will use this model for both the conversation and the summarization
 model = ChatGroq(
@@ -19,6 +19,8 @@ model = ChatGroq(
     model=Config.GROQ_MODEL,
     temperature=Config.GROQ_TEMPERATURE
 )
+
+
 
 # State class to store messages and summary
 class State(MessagesState):
@@ -30,20 +32,27 @@ class State(MessagesState):
     created_at: datetime
     updated_at: datetime
     user: Optional[str]
+    last_agent: Optional[str]  # Agregar campo para trackear el último agente
 
 # Define the logic to call the niño agent
 def call_niño_agent(state: State):
     """Nodo que responde como un niño"""
     print("---Niño Node---")
     
+    # Importar la configuración del agente niño
+    from prompts import NIÑO_AGENT_CONFIG, NIÑO_WITH_SUMMARY_PROMPT
+    
     # Get summary if it exists
     summary = state.get("summary", "")
     
     # Create system message with summary context if available
     if summary:
-        system_content = f"Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño.\n\nResumen de la conversación anterior: {summary}"
+        system_content = NIÑO_WITH_SUMMARY_PROMPT.format(
+            base_prompt=NIÑO_AGENT_CONFIG['base_prompt'],
+            summary=summary
+        )
     else:
-        system_content = "Eres un niño de 8 años. Responde de manera infantil, con emoción y curiosidad. Usa lenguaje simple y expresiones típicas de un niño."
+        system_content = NIÑO_AGENT_CONFIG['base_prompt']
     
     system_message = SystemMessage(content=system_content)
     
@@ -51,21 +60,27 @@ def call_niño_agent(state: State):
     messages = [system_message] + state["messages"]
     
     response = model.invoke(messages)
-    return {"messages": [response]}
+    return {"messages": [response], "last_agent": "niño"}
 
 # Define the logic to call the anciano agent
 def call_anciano_agent(state: State):
     """Nodo que responde como un anciano"""
     print("---Anciano Node---")
     
+    # Importar la configuración del agente anciano
+    from prompts import ANCIANO_AGENT_CONFIG, ANCIANO_WITH_SUMMARY_PROMPT
+    
     # Get summary if it exists
     summary = state.get("summary", "")
     
     # Create system message with summary context if available
     if summary:
-        system_content = f"Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado.\n\nResumen de la conversación anterior: {summary}"
+        system_content = ANCIANO_WITH_SUMMARY_PROMPT.format(
+            base_prompt=ANCIANO_AGENT_CONFIG['base_prompt'],
+            summary=summary
+        )
     else:
-        system_content = "Eres un anciano sabio de 80 años. Responde con experiencia, paciencia y sabiduría. Usa un tono reflexivo y comparte lecciones de vida cuando sea apropiado."
+        system_content = ANCIANO_AGENT_CONFIG['base_prompt']
     
     system_message = SystemMessage(content=system_content)
     
@@ -73,20 +88,45 @@ def call_anciano_agent(state: State):
     messages = [system_message] + state["messages"]
     
     response = model.invoke(messages)
-    return {"messages": [response]}
+    return {"messages": [response], "last_agent": "anciano"}
+
+# Define the logic to call the profesor agent
+def call_profesor_agent(state: State):
+    """Nodo que responde como un profesor"""
+    print("---Profesor Node---")
+    
+    # Importar y usar la clase ProfesorAgent optimizada
+    from agents import ProfesorAgent
+    
+    # Crear instancia del agente y procesar el estado
+    profesor_agent = ProfesorAgent()
+    result = profesor_agent.invoke(state)  # ← Usar invoke() en lugar de process_state()
+    
+    # Asegurar que se incluya last_agent en el resultado
+    if "last_agent" not in result:
+        result["last_agent"] = "profesor"
+    
+    return result
 
 # Define the logic to greet the user
 def call_greet_agent(state: State):
     """Nodo que saluda al usuario por primera vez"""
     print("---Greet Node---")
     
+    # Importar el mensaje de bienvenida desde prompts
+    from prompts import GREETING_MESSAGE
+    
     # Crear mensaje de bienvenida
-    welcome_message = AIMessage(content="Hola bienvenido. ¿En qué puedo ayudarte?")
+    welcome_message = AIMessage(content=GREETING_MESSAGE)
     
     # Retornar el mensaje de bienvenida y marcar como saludado
+    # También actualizar el status y establecer la pregunta actual
     return {
         "messages": [welcome_message], 
-        "greeted": True
+        "greeted": True,
+        "status": "exploring",  # Cambiar de "greeting" a "exploring"
+        "question": "Tipo de plan",  # Establecer la pregunta actual
+        "last_agent": "greet"  # Marcar que el agente de saludo respondió
     }
 
 # Define the logic to summarize the conversation
@@ -94,17 +134,20 @@ def summarize_conversation(state: State):
     """Nodo que resume la conversación"""
     print("---Resumen de Conversación---")
     
+    # Importar los prompts de resumen
+    from prompts import SUMMARY_EXTEND_PROMPT, SUMMARY_CREATE_PROMPT, SUMMARY_EXTEND_WITH_CONTEXT
+    
     # Obtener el resumen existente si existe
     summary = state.get("summary", "")
     
     # Crear el prompt de resumen
     if summary:
-        summary_message = (
-            f"Este es el resumen de la conversación hasta ahora: {summary}\n\n"
-            "Extiende el resumen teniendo en cuenta los nuevos mensajes arriba:"
+        summary_message = SUMMARY_EXTEND_WITH_CONTEXT.format(
+            summary=summary,
+            extend_prompt=SUMMARY_EXTEND_PROMPT
         )
     else:
-        summary_message = "Crea un resumen de la conversación arriba:"
+        summary_message = SUMMARY_CREATE_PROMPT
     
     # Agregar el prompt a nuestro historial
     messages = state["messages"] + [HumanMessage(content=summary_message)]
@@ -119,6 +162,12 @@ def summarize_conversation(state: State):
         "messages": delete_messages
     }
 
+# Importar RouterAgent para usar su lógica
+from agents import RouterAgent
+
+# Instancia global del RouterAgent
+router_agent = RouterAgent()
+
 # Define the logic to route to the appropriate agent
 def route_to_agent(state: State) -> str:
     """Función que decide el siguiente nodo basado en el estado"""
@@ -128,12 +177,8 @@ def route_to_agent(state: State) -> str:
         print("Router seleccionó: greet (primera vez)")
         return "greet"
     
-    # Si ya se saludó, elegir aleatoriamente entre niño y anciano
-    import random
-    agents = ["niño", "anciano"]
-    selected = random.choice(agents)
-    
-    print(f"Router seleccionó: {selected}")
+    # Si ya se saludó, usar el RouterAgent para selección aleatoria
+    selected = router_agent.route_to_random_agent(state)
     return selected
 
 # Determine whether to end or summarize the conversation
@@ -144,18 +189,7 @@ def should_continue(state: State) -> Literal["summarize_conversation", "__end__"
     - Si hay más de 6 mensajes: resumir y terminar
     - Si hay 6 o menos mensajes: terminar directamente
     """
-    messages = state["messages"]
-    
-    print(f"Evaluando continuar: {len(messages)} mensajes")
-    
-    # Si hay más de 6 mensajes, resumir la conversación
-    if len(messages) > 6:
-        print("¡Activando summary! Más de 6 mensajes")
-        return "summarize_conversation"
-    
-    # De lo contrario, terminar
-    print("Continuando conversación normal")
-    return END
+    return router_agent.should_continue(state)
 
 # Eliminar la función after_summary_route ya que no se necesita
 
@@ -191,6 +225,7 @@ class GraphInterface:
         workflow.add_node("greet", call_greet_agent)
         workflow.add_node("niño", call_niño_agent)
         workflow.add_node("anciano", call_anciano_agent)
+        workflow.add_node("profesor", call_profesor_agent)
         workflow.add_node("summarize_conversation", summarize_conversation)
         
         # Set the entrypoint with routing
@@ -200,7 +235,8 @@ class GraphInterface:
             {
                 "greet": "greet",
                 "niño": "niño",
-                "anciano": "anciano"
+                "anciano": "anciano",
+                "profesor": "profesor"
             }
         )
         
@@ -219,6 +255,15 @@ class GraphInterface:
         
         workflow.add_conditional_edges(
             "anciano",
+            should_continue,
+            {
+                "summarize_conversation": "summarize_conversation",
+                "__end__": END
+            }
+        )
+        
+        workflow.add_conditional_edges(
+            "profesor",
             should_continue,
             {
                 "summarize_conversation": "summarize_conversation",
@@ -278,14 +323,7 @@ class GraphInterface:
         
         return result
     
-    def get_agent_type(self, response_text: str) -> str:
-        """Determinar el tipo de agente basado en la respuesta"""
-        niño_keywords = ["niño", "niña", "pequeño", "juego", "diversión", "¡", "wow", "genial"]
-        
-        if any(word in response_text.lower() for word in niño_keywords):
-            return "niño"
-        else:
-            return "anciano"
+
     
     # Métodos de conveniencia que delegan al StateManager
     def update_status(self, state: State, new_status: ConversationStatus) -> State:

@@ -35,9 +35,12 @@ class BaseAgent(ABC):
             if isinstance(result, dict) and "updated_at" not in result:
                 result["updated_at"] = datetime.now()
             
+            # Extraer la respuesta para el logging
+            response_text = self._extract_response_text(result)
+            
             # Log del estado después de ejecutar
             processing_time = time.time() - start_time
-            self.log_manager.log_after_agent(self.agent_name, result, processing_time)
+            self.log_manager.log_after_agent(self.agent_name, result, processing_time, response_text)
             
             return result
             
@@ -59,3 +62,37 @@ class BaseAgent(ABC):
     def _log_prompt(self, state: Dict[str, Any], prompt_text: str):
         """Log del prompt completo antes de ejecutar"""
         self.log_manager.log_before_agent(self.agent_name, state, prompt_text)
+    
+    def _extract_response_text(self, result: Dict[str, Any]) -> str:
+        """Extraer el texto de la respuesta del resultado del agente"""
+        try:
+            if "messages" in result and result["messages"]:
+                # Obtener el último mensaje (que debería ser la respuesta del agente)
+                last_message = result["messages"][-1]
+                
+                # Si es un mensaje de LangChain, extraer el contenido
+                if hasattr(last_message, 'content'):
+                    return last_message.content
+                # Si es un diccionario, buscar el campo content
+                elif isinstance(last_message, dict) and 'content' in last_message:
+                    return last_message['content']
+                # Fallback: convertir a string
+                else:
+                    return str(last_message)
+            
+            # Si no hay mensajes, buscar otros campos que puedan contener la respuesta
+            for key in ['response', 'answer', 'output', 'result']:
+                if key in result:
+                    value = result[key]
+                    if hasattr(value, 'content'):
+                        return value.content
+                    elif isinstance(value, str):
+                        return value
+                    else:
+                        return str(value)
+            
+            # Si no se encuentra nada, retornar un mensaje indicativo
+            return "Respuesta no disponible en formato de texto"
+            
+        except Exception as e:
+            return f"Error extrayendo respuesta: {str(e)}"

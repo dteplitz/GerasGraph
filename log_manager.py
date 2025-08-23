@@ -24,7 +24,7 @@ class StateChangeEvent:
     """Evento de cambio de estado en el grafo"""
     
     def __init__(self, agent_name: str, event_type: str, state: Dict[str, Any], 
-                 timestamp: datetime, processing_time: Optional[float] = None,
+                 timestamp: str, processing_time: Optional[float] = None,
                  prompt: Optional[str] = None, response: Optional[str] = None):
         self.agent_name = agent_name
         self.event_type = event_type  # "BEFORE" o "AFTER"
@@ -54,7 +54,7 @@ class ConsoleLogObserver(LogObserver):
         if event.event_type == "BEFORE":
             print(f"\n{'='*80}")
             print(f"🚀 AGENTE [{event.agent_name.upper()}] - INICIANDO")
-            print(f"📅 Timestamp: {event.timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+            print(f"📅 Timestamp: {event.timestamp}")
             print(f"📊 Estado de entrada:")
             self._log_state(event.state)
             
@@ -106,7 +106,7 @@ class FileLogObserver(LogObserver):
         serializable_state = self._make_serializable(event.state)
         
         log_entry = {
-            "timestamp": event.timestamp.isoformat(),
+            "timestamp": event.timestamp,
             "agent_name": event.agent_name,
             "event_type": event.event_type,
             "processing_time": event.processing_time,
@@ -138,6 +138,9 @@ class FileLogObserver(LogObserver):
                     serializable_msg = self._serialize_langchain_message(msg)
                     serializable_messages.append(serializable_msg)
                 serializable_state[key] = serializable_messages
+            elif key == "updated_at" and isinstance(value, datetime):
+                # Manejo específico para campos de timestamp
+                serializable_state[key] = value.isoformat()
             else:
                 # Para otros campos, usar serialización inteligente
                 serializable_state[key] = self._serialize_value(value)
@@ -207,6 +210,10 @@ class FileLogObserver(LogObserver):
         except (TypeError, ValueError):
             # Si no es serializable, usar métodos específicos
             
+            # Para objetos datetime (manejo específico)
+            if isinstance(value, datetime):
+                return value.isoformat()
+            
             # Para objetos Pydantic
             if hasattr(value, 'model_dump'):
                 return value.model_dump()
@@ -259,11 +266,19 @@ class LogManager:
         if not self.enabled:
             return
         
+        # Validar que el estado sea serializable antes de crear el evento
+        try:
+            validated_state = self._validate_state_serialization(state)
+        except Exception as e:
+            print(f"⚠️ Error validando serialización del estado: {e}")
+            # Usar estado simplificado si falla la validación
+            validated_state = {"error": "Estado no serializable", "original_keys": list(state.keys())}
+        
         event = StateChangeEvent(
             agent_name=agent_name,
             event_type=event_type,
-            state=state,
-            timestamp=datetime.now(),
+            state=validated_state,
+            timestamp=datetime.now().isoformat(),
             processing_time=processing_time,
             prompt=prompt,
             response=response
@@ -275,6 +290,11 @@ class LogManager:
                 observer.on_state_change(event)
             except Exception as e:
                 print(f"❌ Error en observador de logging: {e}")
+                print(f"   Tipo de error: {type(e).__name__}")
+                print(f"   Observador: {type(observer).__name__}")
+                # Log adicional para debugging
+                import traceback
+                print(f"   Traceback: {traceback.format_exc()}")
     
     def log_before_agent(self, agent_name: str, state: Dict[str, Any], prompt: Optional[str] = None):
         """Log antes de ejecutar un agente"""
@@ -311,6 +331,139 @@ class LogManager:
     def clear_observers(self):
         """Limpiar todos los observadores"""
         self.observers.clear()
+    
+    def _validate_state_serialization(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validar que el estado sea serializable antes de procesarlo.
+        
+        Retorna una versión validada del estado que puede ser serializada a JSON.
+        """
+        try:
+            # Intentar serializar el estado completo
+            json.dumps(state)
+            return state
+        except (TypeError, ValueError):
+            # Si falla, usar el método de serialización inteligente
+            return self._make_state_serializable(state)
+    
+    def _make_state_serializable(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Convertir el estado a un formato JSON serializable.
+        
+        Esta implementación usa métodos de serialización inteligentes para
+        garantizar la compatibilidad con JSON.
+        """
+        serializable_state = {}
+        
+        for key, value in state.items():
+            if key == "messages":
+                # Convertir mensajes de LangChain usando métodos oficiales
+                serializable_messages = []
+                for msg in value:
+                    serializable_msg = self._serialize_langchain_message(msg)
+                    serializable_messages.append(serializable_msg)
+                serializable_state[key] = serializable_messages
+            elif key == "updated_at" and isinstance(value, datetime):
+                # Manejo específico para campos de timestamp
+                serializable_state[key] = value.isoformat()
+            else:
+                # Para otros campos, usar serialización inteligente
+                serializable_state[key] = self._serialize_value(value)
+        
+        return serializable_state
+    
+    def _serialize_langchain_message(self, message) -> Dict[str, Any]:
+        """
+        Serializar un mensaje de LangChain usando métodos oficiales.
+        
+        Prioriza los métodos de serialización nativos de LangChain y Pydantic
+        para garantizar la máxima compatibilidad.
+        """
+        try:
+            # Intentar usar model_dump() (Pydantic v2)
+            if hasattr(message, 'model_dump'):
+                return message.model_dump()
+            
+            # Intentar usar dict() (Pydantic v1)
+            elif hasattr(message, 'dict'):
+                return message.dict()
+            
+            # Intentar usar to_dict() (método legacy)
+            elif hasattr(message, 'to_dict'):
+                return message.to_dict()
+            
+            # Fallback: extraer atributos manualmente
+            else:
+                return self._extract_message_attributes(message)
+                
+        except Exception as e:
+            # Si falla la serialización oficial, usar extracción manual
+            print(f"⚠️ Fallback serialization for message: {e}")
+            return self._extract_message_attributes(message)
+    
+    def _extract_message_attributes(self, message) -> Dict[str, Any]:
+        """
+        Extraer atributos de un mensaje de LangChain de forma manual.
+        
+        Este método se usa como fallback cuando los métodos oficiales fallan.
+        """
+        message_data = {
+            "type": type(message).__name__,
+            "content": getattr(message, 'content', str(message)),
+            "additional_kwargs": getattr(message, 'additional_kwargs', {}),
+            "response_metadata": getattr(message, 'response_metadata', {}),
+            "id": getattr(message, 'id', None),
+            "name": getattr(message, 'name', None),
+            "tool_calls": getattr(message, 'tool_calls', None),
+            "tool_call_id": getattr(message, 'tool_call_id', None),
+        }
+        
+        # Filtrar valores None para limpiar el output
+        return {k: v for k, v in message_data.items() if v is not None}
+    
+    def _serialize_value(self, value) -> Any:
+        """
+        Serializar un valor usando métodos inteligentes.
+        
+        Detecta automáticamente el tipo y usa el método de serialización apropiado.
+        """
+        try:
+            # Intentar serialización directa primero
+            json.dumps(value)
+            return value
+            
+        except (TypeError, ValueError):
+            # Si no es serializable, usar métodos específicos
+            
+            # Para objetos datetime (manejo específico)
+            if isinstance(value, datetime):
+                return value.isoformat()
+            
+            # Para objetos Pydantic
+            if hasattr(value, 'model_dump'):
+                return value.model_dump()
+            elif hasattr(value, 'dict'):
+                return value.dict()
+            
+            # Para objetos con to_dict
+            elif hasattr(value, 'to_dict'):
+                return value.to_dict()
+            
+            # Para objetos con __dict__
+            elif hasattr(value, '__dict__'):
+                return {k: self._serialize_value(v) for k, v in value.__dict__.items()}
+            
+            # Para listas y tuplas
+            elif isinstance(value, (list, tuple)):
+                return [self._serialize_value(item) for item in value]
+            
+            # Para diccionarios
+            elif isinstance(value, dict):
+                return {k: self._serialize_value(v) for k, v in value.items()}
+            
+            # Fallback final: convertir a string
+            else:
+                return str(value)
 
 
 # Instancia global del LogManager (Singleton)

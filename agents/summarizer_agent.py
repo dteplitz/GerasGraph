@@ -22,14 +22,17 @@ class SummarizerAgent(BaseAgent):
         # Obtener el resumen existente si existe
         summary = state.get("summary", "")
         
+        # Importar los prompts específicos del agente summarizer
+        from prompts import SUMMARY_EXTEND_PROMPT, SUMMARY_CREATE_PROMPT, SUMMARY_EXTEND_WITH_CONTEXT
+        
         # Crear el prompt de resumen
         if summary:
-            summary_message = (
-                f"Este es el resumen de la conversación hasta ahora: {summary}\n\n"
-                "Extiende el resumen teniendo en cuenta los nuevos mensajes arriba:"
+            summary_message = SUMMARY_EXTEND_WITH_CONTEXT.format(
+                summary=summary,
+                extend_prompt=SUMMARY_EXTEND_PROMPT
             )
         else:
-            summary_message = "Crea un resumen de la conversación arriba:"
+            summary_message = SUMMARY_CREATE_PROMPT
         
         # Agregar el prompt a nuestro historial
         messages = state["messages"] + [HumanMessage(content=summary_message)]

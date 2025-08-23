@@ -34,7 +34,8 @@ class StateManager:
             "question": None,
             "created_at": current_time,
             "updated_at": current_time,
-            "user": user
+            "user": user,
+            "last_agent": None  # Agregar campo para trackear el último agente que respondió
         }
     
     @staticmethod
@@ -68,6 +69,13 @@ class StateManager:
     def set_question(state: Dict[str, Any], question: str) -> Dict[str, Any]:
         """Establecer la pregunta actual"""
         state["question"] = question
+        state["updated_at"] = datetime.now()
+        return state
+    
+    @staticmethod
+    def set_last_agent(state: Dict[str, Any], agent_type: str) -> Dict[str, Any]:
+        """Marcar qué agente respondió por última vez"""
+        state["last_agent"] = agent_type
         state["updated_at"] = datetime.now()
         return state
     

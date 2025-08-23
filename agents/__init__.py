@@ -7,6 +7,7 @@ Este paquete contiene todos los agentes especializados que componen el grafo.
 from .base_agent import BaseAgent
 from .niño_agent import NiñoAgent
 from .anciano_agent import AncianoAgent
+from .profesor_agent import ProfesorAgent
 from .summarizer_agent import SummarizerAgent
 from .router_agent import RouterAgent
 from .agent_config import *
@@ -15,7 +16,8 @@ from .agent_utils import *
 __all__ = [
     "BaseAgent",
     "NiñoAgent",
-    "AncianoAgent", 
+    "AncianoAgent",
+    "ProfesorAgent",
     "SummarizerAgent",
     "RouterAgent",
     # Configuraciones
