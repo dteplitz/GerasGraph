@@ -135,6 +135,8 @@ class RouterAgent(BaseAgent):
         if reason:
             # Guardar la razon en el estado
             state["reason"] = reason
+            # Actualiza status de la conversacion a waiting_confirmation
+            state["status"] = "waiting_confirmation"
             print(f"[Router] Razón: {reason}")
         
         # Retornar el estado (puede ser modificado si es necesario)
