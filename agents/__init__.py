@@ -1,7 +1,8 @@
 """
-Paquete de agentes para el grafo LangGraph.
+Módulo de agentes para el grafo LangGraph.
 
-Este paquete contiene todos los agentes especializados que componen el grafo.
+Este módulo contiene todos los agentes especializados que se ejecutan
+en los diferentes nodos del grafo de conversación.
 """
 
 from .base_agent import BaseAgent
@@ -10,16 +11,18 @@ from .anciano_agent import AncianoAgent
 from .profesor_agent import ProfesorAgent
 from .summarizer_agent import SummarizerAgent
 from .router_agent import RouterAgent
+from .confirmation_agent import ConfirmationAgent
 from .agent_config import *
 from .agent_utils import *
 
 __all__ = [
     "BaseAgent",
-    "NiñoAgent",
+    "NiñoAgent", 
     "AncianoAgent",
     "ProfesorAgent",
     "SummarizerAgent",
     "RouterAgent",
+    "ConfirmationAgent",
     # Configuraciones
     "NIÑO_AGENT_CONFIG",
     "ANCIANO_AGENT_CONFIG", 

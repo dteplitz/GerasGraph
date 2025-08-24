@@ -66,27 +66,6 @@ class RouterAgent(BaseAgent):
             print(f"[Router] Error parseando respuesta: {str(e)}")
             return False, None
 
-    def route_to_random_agent(self, state: Dict[str, Any]) -> str:
-        """Procesar el estado y detectar si hay respuesta a la pregunta"""
-        print("---Router Node---")
-        
-        # Procesar el estado usando el método abstracto
-        result = self._process_state(state)
-        
-        # Retornar el agente al que rutea
-        return "profesor"
-
-    def should_continue(self, state: Dict[str, Any]) -> Literal["summarize_conversation", "__end__"]:
-        """Determina si continuar la conversación o resumir"""
-        messages = state["messages"]
-
-        # Si hay más de 6 mensajes, resumir la conversación
-        if len(messages) > 6:
-            return "summarize_conversation"
-
-        # De lo contrario, terminar
-        return "__end__"
-
     def _process_state(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Implementación del método abstracto requerido por BaseAgent"""
         # Obtener información del estado

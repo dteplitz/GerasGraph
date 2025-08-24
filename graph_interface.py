@@ -168,18 +168,53 @@ from agents import RouterAgent
 # Instancia global del RouterAgent
 router_agent = RouterAgent()
 
+# Define the logic for the router node
+def router_node(state: State) -> State:
+    """Nodo que analiza la respuesta del usuario y actualiza el estado"""
+    print("---Router Node---")
+    # Procesar el estado usando el RouterAgent y retornar el estado modificado
+    return router_agent._process_state(state)
+
+# Define the logic for the confirmation agent
+def call_confirmation_agent(state: State) -> State:
+    """Nodo que pide confirmación de la razón del usuario"""
+    from agents import ConfirmationAgent
+    confirmation_agent = ConfirmationAgent()
+    result = confirmation_agent.invoke(state)
+    
+    # Asegurar que se incluya last_agent en el resultado
+    if "last_agent" not in result:
+        result["last_agent"] = "confirmation"
+    
+    return result
+
 # Define the logic to route to the appropriate agent
 def route_to_agent(state: State) -> str:
-    """Función que decide el siguiente nodo basado en el estado"""
+    """Función que decide el siguiente nodo basado en el estado procesado por el router"""
     
     # Si no se ha saludado al usuario, ir al nodo de saludo
     if not state.get("greeted", False):
         print("Router seleccionó: greet (primera vez)")
         return "greet"
     
-    # Si ya se saludó, usar el RouterAgent para selección aleatoria
-    selected = router_agent.route_to_random_agent(state)
-    return selected
+    # Si ya se saludó, ir al router para procesar la respuesta del usuario
+    print("Router seleccionó: router (ya saludado, procesar respuesta)")
+    return "router"
+
+# Define the logic to route after the router has processed the state
+def route_after_router(state: State) -> str:
+    """Función que decide el siguiente nodo después de que el router procesó el estado"""
+    status = state.get("status")
+    
+    if status == "waiting_confirmation":
+        print("Router seleccionó: confirmation (usuario dio razón válida, pedir confirmación)")
+        return "confirmation"
+    elif status == "exploring":
+        print("Router seleccionó: profesor (usuario no dio razón válida, continuar explorando)")
+        return "profesor"
+    else:
+        print(f"Router seleccionó: profesor (status desconocido: {status})")
+        return "profesor"
 
 # Determine whether to end or summarize the conversation
 def should_continue(state: State) -> Literal["summarize_conversation", "__end__"]:
@@ -189,7 +224,14 @@ def should_continue(state: State) -> Literal["summarize_conversation", "__end__"
     - Si hay más de 6 mensajes: resumir y terminar
     - Si hay 6 o menos mensajes: terminar directamente
     """
-    return router_agent.should_continue(state)
+    messages = state["messages"]
+    
+    # Si hay más de 6 mensajes, resumir la conversación
+    if len(messages) > 6:
+        return "summarize_conversation"
+    
+    # De lo contrario, terminar
+    return "__end__"
 
 # Eliminar la función after_summary_route ya que no se necesita
 
@@ -223,6 +265,8 @@ class GraphInterface:
         
         # Add nodes using the pure functions
         workflow.add_node("greet", call_greet_agent)
+        workflow.add_node("router", router_node)  # Nodo router que procesa el estado
+        workflow.add_node("confirmation", call_confirmation_agent)  # Nodo confirmador
         workflow.add_node("niño", call_niño_agent)
         workflow.add_node("anciano", call_anciano_agent)
         workflow.add_node("profesor", call_profesor_agent)
@@ -234,15 +278,28 @@ class GraphInterface:
             route_to_agent,
             {
                 "greet": "greet",
-                "niño": "niño",
-                "anciano": "anciano",
-                "profesor": "profesor"
+                "router": "router"
             }
         )
         
         # Add conditional edges to decide whether to continue or summarize
         # El nodo greet siempre termina (solo saluda)
         workflow.add_edge("greet", END)
+        
+        # El router va a la decisión de ruta
+        workflow.add_conditional_edges(
+            "router",
+            route_after_router,
+            {
+                "confirmation": "confirmation",
+                "profesor": "profesor",
+                "niño": "niño",
+                "anciano": "anciano"
+            }
+        )
+        
+        # El nodo confirmador termina para esperar la respuesta del usuario
+        workflow.add_edge("confirmation", END)
         
         workflow.add_conditional_edges(
             "niño",
