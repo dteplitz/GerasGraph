@@ -43,7 +43,7 @@ class RouterAgent(BaseAgent):
             # Marcar como inicializado
             self._initialized = True
 
-    def _parse_simple_response(self, response_content: str) -> bool:
+    def _parse_simple_response(self, response_content: str) -> tuple[bool, str]:
         """Parsear la respuesta JSON del modelo"""
         try:
             import json
@@ -55,22 +55,16 @@ class RouterAgent(BaseAgent):
             try:
                 json_data = json.loads(response_clean)
                 has_response = json_data.get("has_response", 0)
-                return has_response == 1
+                reason = json_data.get("reason", None)
+                return has_response == 1, reason
             except json.JSONDecodeError:
                 # Si no es JSON válido, loguear y continuar
-                self.log_manager.log_warning(
-                    self.agent_name,
-                    f"Formato de respuesta incorrecto: '{response_content}'"
-                )
-                return False
+                print(f"[Router] Formato de respuesta incorrecto: '{response_content}'")
+                return False, None
 
         except Exception as e:
-            self.log_manager.log_error(
-                self.agent_name,
-                e,
-                {"response_content": response_content}
-            )
-            return False
+            print(f"[Router] Error parseando respuesta: {str(e)}")
+            return False, None
 
     def route_to_random_agent(self, state: Dict[str, Any]) -> str:
         """Procesar el estado y detectar si hay respuesta a la pregunta"""
@@ -134,10 +128,14 @@ class RouterAgent(BaseAgent):
         response = self.model.invoke(messages_for_analysis)
         
         # Parsear la respuesta (debe ser 1 o 0)
-        has_response = self._parse_simple_response(response.content)
+        has_response, reason = self._parse_simple_response(response.content)
         
         # Log del resultado
         print(f"[Router] Usuario {'respondió' if has_response else 'NO respondió'} a la pregunta")
+        if reason:
+            # Guardar la razon en el estado
+            state["reason"] = reason
+            print(f"[Router] Razón: {reason}")
         
         # Retornar el estado (puede ser modificado si es necesario)
         return state
