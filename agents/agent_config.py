@@ -8,9 +8,7 @@ from prompts import (
     NIÑO_AGENT_CONFIG,
     ANCIANO_AGENT_CONFIG,
     PROFESOR_AGENT_CONFIG,
-    SUMMARIZER_AGENT_CONFIG,
-    ROUTER_AGENT_CONFIG,
-    GRAPH_CONFIG
+    SUMMARIZER_AGENT_CONFIG
 )
 
 # Re-exportar las configuraciones para mantener compatibilidad
@@ -18,7 +16,5 @@ __all__ = [
     "NIÑO_AGENT_CONFIG",
     "ANCIANO_AGENT_CONFIG",
     "PROFESOR_AGENT_CONFIG",
-    "SUMMARIZER_AGENT_CONFIG",
-    "ROUTER_AGENT_CONFIG",
-    "GRAPH_CONFIG"
+    "SUMMARIZER_AGENT_CONFIG"
 ]

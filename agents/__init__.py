@@ -24,8 +24,6 @@ __all__ = [
     "NIÑO_AGENT_CONFIG",
     "ANCIANO_AGENT_CONFIG", 
     "SUMMARIZER_AGENT_CONFIG",
-    "ROUTER_AGENT_CONFIG",
-    "GRAPH_CONFIG",
     # Utilidades
     "build_system_prompt",
     "format_messages_for_logging",

@@ -1,29 +1,21 @@
 """
-Prompts para el agente Router del sistema GerasGraph.
+Prompts para el agente router mejorado.
 
-Este módulo contiene todos los prompts específicos para el agente Router,
-que se encarga de decidir el flujo de la conversación y cuándo resumir.
+Este módulo contiene todos los prompts utilizados por el RouterAgent
+para detectar si hay una razón explícita en la respuesta del usuario
+y determinar el flujo de la conversación.
 """
 
-# Configuración del Router
-ROUTER_AGENT_CONFIG = {
-    "available_agents": ["niño", "anciano", "profesor"],
-    "summary_threshold": 6,  # Número de mensajes antes de resumir
-    "default_route": "niño"
-}
+REASON_DETECTION_PROMPT = """Analiza si el usuario ha respondido a la pregunta.
 
-# Configuración general del grafo
-GRAPH_CONFIG = {
-    "max_messages_before_summary": 6,
-    "summary_keep_messages": 2,
-    "default_status": "greeting"
-}
+PREGUNTA: {current_question}
 
-# Mensajes de debug para el router
-ROUTER_DEBUG_MESSAGES = {
-    "greet_selected": "Router seleccionó: greet (primera vez)",
-    "agent_selected": "Router seleccionó: {agent}",
-    "evaluating_continue": "Evaluando continuar: {count} mensajes",
-    "activating_summary": "¡Activando summary! Más de 6 mensajes",
-    "continuing_normal": "Continuando conversación normal"
-}
+RESPUESTA DEL USUARIO: {user_message}
+
+INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
+{{"has_response": 1}} si el usuario dio una respuesta a la pregunta
+{{"has_response": 0}} si el usuario NO dio una respuesta a la pregunta
+
+RESPUESTA:"""
+
+

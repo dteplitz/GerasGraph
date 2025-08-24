@@ -33,9 +33,7 @@ __all__ = [
     "SUMMARY_EXTEND_WITH_CONTEXT",
     
     # Router agent prompts
-    "ROUTER_AGENT_CONFIG",
-    "GRAPH_CONFIG",
-    "ROUTER_DEBUG_MESSAGES",
+    "REASON_DETECTION_PROMPT",
     
     # Greeting prompts
     "GREETING_MESSAGE"

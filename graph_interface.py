@@ -125,7 +125,7 @@ def call_greet_agent(state: State):
         "messages": [welcome_message], 
         "greeted": True,
         "status": "exploring",  # Cambiar de "greeting" a "exploring"
-        "question": "Tipo de plan",  # Establecer la pregunta actual
+        "question": "¿Qué tipo de plan te gustaría elegir? Puedes decirme si prefieres Monto final, Renta, Duración, o si tienes dudas sobre alguno.",
         "last_agent": "greet"  # Marcar que el agente de saludo respondió
     }
 
