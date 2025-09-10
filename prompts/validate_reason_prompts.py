@@ -1,9 +1,9 @@
 """
-Prompts para el agente router mejorado.
+Prompts para el agente ValidateReason.
 
-Este módulo contiene todos los prompts utilizados por el RouterAgent
+Este módulo contiene todos los prompts utilizados por el ValidateReasonAgent
 para detectar si hay una razón explícita en la respuesta del usuario
-y determinar el flujo de la conversación.
+y determinar el flujo inicial de la conversación.
 """
 
 REASON_DETECTION_PROMPT = """Analiza si el usuario ha respondido a la pregunta.
@@ -37,5 +37,3 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 - "No sé qué elegir" → has_response: 0, reason: null
 
 RESPUESTA:"""
-
-

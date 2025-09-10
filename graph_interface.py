@@ -11,7 +11,7 @@ from datetime import datetime
 
 # Importar desde archivos separados
 from state_manager import StateManager, ConversationStatus
-from agents import NiñoAgent, AncianoAgent, ProfesorAgent, SummarizerAgent, RouterAgent
+from agents import ProfesorAgent, SummarizerAgent, ValidateReasonAgent, EvaluateCloseAgent, EndConversationAgent
 
 # We will use this model for both the conversation and the summarization
 model = ChatGroq(
@@ -34,61 +34,9 @@ class State(MessagesState):
     user: Optional[str]
     last_agent: Optional[str]  # Agregar campo para trackear el último agente
 
-# Define the logic to call the niño agent
-def call_niño_agent(state: State):
-    """Nodo que responde como un niño"""
-    print("---Niño Node---")
-    
-    # Importar la configuración del agente niño
-    from prompts import NIÑO_AGENT_CONFIG, NIÑO_WITH_SUMMARY_PROMPT
-    
-    # Get summary if it exists
-    summary = state.get("summary", "")
-    
-    # Create system message with summary context if available
-    if summary:
-        system_content = NIÑO_WITH_SUMMARY_PROMPT.format(
-            base_prompt=NIÑO_AGENT_CONFIG['base_prompt'],
-            summary=summary
-        )
-    else:
-        system_content = NIÑO_AGENT_CONFIG['base_prompt']
-    
-    system_message = SystemMessage(content=system_content)
-    
-    # Prepare messages for the model
-    messages = [system_message] + state["messages"]
-    
-    response = model.invoke(messages)
-    return {"messages": [response], "last_agent": "niño"}
 
-# Define the logic to call the anciano agent
-def call_anciano_agent(state: State):
-    """Nodo que responde como un anciano"""
-    print("---Anciano Node---")
-    
-    # Importar la configuración del agente anciano
-    from prompts import ANCIANO_AGENT_CONFIG, ANCIANO_WITH_SUMMARY_PROMPT
-    
-    # Get summary if it exists
-    summary = state.get("summary", "")
-    
-    # Create system message with summary context if available
-    if summary:
-        system_content = ANCIANO_WITH_SUMMARY_PROMPT.format(
-            base_prompt=ANCIANO_AGENT_CONFIG['base_prompt'],
-            summary=summary
-        )
-    else:
-        system_content = ANCIANO_AGENT_CONFIG['base_prompt']
-    
-    system_message = SystemMessage(content=system_content)
-    
-    # Prepare messages for the model
-    messages = [system_message] + state["messages"]
-    
-    response = model.invoke(messages)
-    return {"messages": [response], "last_agent": "anciano"}
+
+
 
 # Define the logic to call the profesor agent
 def call_profesor_agent(state: State):
@@ -162,18 +110,56 @@ def summarize_conversation(state: State):
         "messages": delete_messages
     }
 
-# Importar RouterAgent para usar su lógica
-from agents import RouterAgent
+# Importar ValidateReasonAgent para usar su lógica
+from agents import ValidateReasonAgent
 
-# Instancia global del RouterAgent
-router_agent = RouterAgent()
+# Instancia global del ValidateReasonAgent
+validate_reason_agent = ValidateReasonAgent()
 
-# Define the logic for the router node
-def router_node(state: State) -> State:
-    """Nodo que analiza la respuesta del usuario y actualiza el estado"""
-    print("---Router Node---")
-    # Procesar el estado usando el RouterAgent y retornar el estado modificado
-    return router_agent._process_state(state)
+# Instancia global del EvaluateCloseAgent
+evaluate_close_agent = EvaluateCloseAgent()
+
+# Instancia global del EndConversationAgent
+end_conversation_agent = EndConversationAgent()
+
+# Define the logic for the validate reason node
+def validate_reason_node(state: State) -> State:
+    """Nodo que valida si el usuario dio una razón válida"""
+    print("---Validate Reason Node---")
+    # Procesar el estado usando el ValidateReasonAgent y retornar el estado modificado
+    return validate_reason_agent._process_state(state)
+
+# Define the logic for the evaluate close node
+def evaluate_close_node(state: State) -> State:
+    """Nodo que evalúa si la conversación está lista para cerrar"""
+    print("---Evaluate Close Node---")
+    # Procesar el estado usando el EvaluateCloseAgent y retornar el estado modificado
+    return evaluate_close_agent._process_state(state)
+
+# Define the logic for the end conversation node
+def end_conversation_node(state: State) -> State:
+    """Nodo que finaliza la conversación"""
+    print("---End Conversation Node---")
+    # Procesar el estado usando el EndConversationAgent y retornar el estado modificado
+    return end_conversation_agent._process_state(state)
+
+# Define the logic for the conversation closed node
+def conversation_closed_node(state: State) -> State:
+    """Nodo que responde cuando la conversación ya fue cerrada"""
+    print("---Conversation Closed Node---")
+    
+    # Crear mensaje informativo
+    closed_message = AIMessage(content="La conversación ya ha sido cerrada. No se pueden procesar más mensajes.")
+    
+    # Agregar el mensaje al estado
+    if "messages" not in state:
+        state["messages"] = []
+    state["messages"].append(closed_message)
+    
+    # Marcar el último agente
+    state["last_agent"] = "conversation_closed"
+    
+    return state
 
 # Define the logic for the confirmation agent
 def call_confirmation_agent(state: State) -> State:
@@ -190,30 +176,56 @@ def call_confirmation_agent(state: State) -> State:
 
 # Define the logic to route to the appropriate agent
 def route_to_agent(state: State) -> str:
-    """Función que decide el siguiente nodo basado en el estado procesado por el router"""
+    """Función que decide el siguiente nodo basado en el estado"""
+    
+    # Si la conversación ya fue cerrada, ir al nodo conversation_closed
+    if state.get("status") == "end_conversation":
+        print("Router seleccionó: conversation_closed (conversación ya cerrada)")
+        return "conversation_closed"
     
     # Si no se ha saludado al usuario, ir al nodo de saludo
     if not state.get("greeted", False):
         print("Router seleccionó: greet (primera vez)")
         return "greet"
     
-    # Si ya se saludó, ir al router para procesar la respuesta del usuario
-    print("Router seleccionó: router (ya saludado, procesar respuesta)")
-    return "router"
+    # Si ya se saludó, ir al validate_reason para validar la respuesta del usuario
+    print("Router seleccionó: validate_reason (ya saludado, validar respuesta)")
+    return "validate_reason"
 
-# Define the logic to route after the router has processed the state
-def route_after_router(state: State) -> str:
-    """Función que decide el siguiente nodo después de que el router procesó el estado"""
+# Define the logic to route after the validate_reason has processed the state
+def route_after_validation(state: State) -> str:
+    """Función que decide el siguiente nodo después de que validate_reason procesó el estado"""
     status = state.get("status")
     
-    if status == "waiting_confirmation":
-        print("Router seleccionó: confirmation (usuario dio razón válida, pedir confirmación)")
+    if status == "asking_confirmation":
+        print("ValidateReason seleccionó: confirmation (usuario dio razón válida, pedir confirmación)")
         return "confirmation"
+    elif status == "waiting_confirmation":
+        print("ValidateReason seleccionó: evaluate_close (usuario ya está en confirmación, evaluar si cerrar)")
+        return "evaluate_close"
     elif status == "exploring":
-        print("Router seleccionó: profesor (usuario no dio razón válida, continuar explorando)")
+        print("ValidateReason seleccionó: profesor (usuario no dio razón válida, continuar explorando)")
         return "profesor"
     else:
-        print(f"Router seleccionó: profesor (status desconocido: {status})")
+        print(f"ValidateReason seleccionó: profesor (status desconocido: {status})")
+        return "profesor"
+
+# Define the logic to route after the evaluate_close has processed the state
+def route_after_evaluate_close(state: State) -> str:
+    """Función que decide el siguiente nodo después de que evaluate_close procesó el estado"""
+    status = state.get("status")
+    
+    if status == "confirmed":
+        print("EvaluateClose seleccionó: end_conversation (usuario confirmó, finalizar conversación)")
+        return "end_conversation"
+    elif status == "waiting_confirmation":
+        print("EvaluateClose seleccionó: confirmation (usuario sigue esperando confirmación)")
+        return "confirmation"
+    elif status == "exploring":
+        print("EvaluateClose seleccionó: profesor (usuario no dio razón válida, continuar explorando)")
+        return "profesor"
+    else:
+        print(f"EvaluateClose seleccionó: profesor (status desconocido: {status})")
         return "profesor"
 
 # Determine whether to end or summarize the conversation
@@ -265,10 +277,11 @@ class GraphInterface:
         
         # Add nodes using the pure functions
         workflow.add_node("greet", call_greet_agent)
-        workflow.add_node("router", router_node)  # Nodo router que procesa el estado
+        workflow.add_node("validate_reason", validate_reason_node)  # Nodo validate reason que valida el estado
+        workflow.add_node("evaluate_close", evaluate_close_node)  # Nodo que evalúa si cerrar
         workflow.add_node("confirmation", call_confirmation_agent)  # Nodo confirmador
-        workflow.add_node("niño", call_niño_agent)
-        workflow.add_node("anciano", call_anciano_agent)
+        workflow.add_node("end_conversation", end_conversation_node)  # Nodo que finaliza la conversación
+        workflow.add_node("conversation_closed", conversation_closed_node)  # Nodo para conversación cerrada
         workflow.add_node("profesor", call_profesor_agent)
         workflow.add_node("summarize_conversation", summarize_conversation)
         
@@ -278,7 +291,8 @@ class GraphInterface:
             route_to_agent,
             {
                 "greet": "greet",
-                "router": "router"
+                "validate_reason": "validate_reason",
+                "conversation_closed": "conversation_closed"
             }
         )
         
@@ -286,23 +300,34 @@ class GraphInterface:
         # El nodo greet siempre termina (solo saluda)
         workflow.add_edge("greet", END)
         
-        # El router va a la decisión de ruta
+        # El nodo conversation_closed siempre termina (conversación ya cerrada)
+        workflow.add_edge("conversation_closed", END)
+        
+        # El validate_reason va a la decisión de ruta
         workflow.add_conditional_edges(
-            "router",
-            route_after_router,
+            "validate_reason",
+            route_after_validation,
             {
                 "confirmation": "confirmation",
-                "profesor": "profesor",
-                "niño": "niño",
-                "anciano": "anciano"
+                "evaluate_close": "evaluate_close",
+                "profesor": "profesor"
             }
         )
         
-        # El nodo confirmador termina para esperar la respuesta del usuario
-        workflow.add_edge("confirmation", END)
-        
+        # El evaluate_close va a la decisión de ruta (manteniendo la lógica original)
         workflow.add_conditional_edges(
-            "niño",
+            "evaluate_close",
+            route_after_evaluate_close,
+            {
+                "confirmation": "confirmation",
+                "end_conversation": "end_conversation",
+                "profesor": "profesor"
+            }
+        )
+        
+        # El nodo confirmador va a should_continue para decidir si resumir o terminar
+        workflow.add_conditional_edges(
+            "confirmation",
             should_continue,
             {
                 "summarize_conversation": "summarize_conversation",
@@ -310,14 +335,17 @@ class GraphInterface:
             }
         )
         
+        # El nodo end_conversation va a should_continue para decidir si resumir o terminar
         workflow.add_conditional_edges(
-            "anciano",
+            "end_conversation",
             should_continue,
             {
                 "summarize_conversation": "summarize_conversation",
                 "__end__": END
             }
         )
+        
+
         
         workflow.add_conditional_edges(
             "profesor",

@@ -5,21 +5,14 @@ Este módulo centraliza todos los prompts utilizados por los diferentes agentes,
 manteniendo la consistencia en español y facilitando el mantenimiento.
 """
 
-from .niño_prompts import *
-from .anciano_prompts import *
 from .profesor_prompts import *
 from .summarizer_prompts import *
-from .router_prompts import *
+from .validate_reason_prompts import *
+from .evaluate_close_prompts import *
+from .end_conversation_prompts import *
 from .greeting_prompts import *
 
 __all__ = [
-    # Niño agent prompts
-    "NIÑO_AGENT_CONFIG",
-    "NIÑO_WITH_SUMMARY_PROMPT",
-    
-    # Anciano agent prompts
-    "ANCIANO_AGENT_CONFIG",
-    "ANCIANO_WITH_SUMMARY_PROMPT",
     
     # Profesor agent prompts
     "PROFESOR_AGENT_CONFIG",
@@ -32,8 +25,12 @@ __all__ = [
     "SUMMARY_CREATE_PROMPT",
     "SUMMARY_EXTEND_WITH_CONTEXT",
     
-    # Router agent prompts
+    # Validate reason agent prompts
     "REASON_DETECTION_PROMPT",
+    # Evaluate close agent prompts
+    "EVALUATE_CLOSE_PROMPT",
+    # End conversation agent prompts
+    "END_CONVERSATION_PROMPT",
     
     # Greeting prompts
     "GREETING_MESSAGE"

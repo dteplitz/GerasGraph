@@ -5,16 +5,12 @@ Este módulo ahora importa los prompts desde los módulos específicos de cada a
 """
 
 from prompts import (
-    NIÑO_AGENT_CONFIG,
-    ANCIANO_AGENT_CONFIG,
     PROFESOR_AGENT_CONFIG,
     SUMMARIZER_AGENT_CONFIG
 )
 
 # Re-exportar las configuraciones para mantener compatibilidad
 __all__ = [
-    "NIÑO_AGENT_CONFIG",
-    "ANCIANO_AGENT_CONFIG",
     "PROFESOR_AGENT_CONFIG",
     "SUMMARIZER_AGENT_CONFIG"
 ]

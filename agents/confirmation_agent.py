@@ -67,6 +67,8 @@ class ConfirmationAgent(BaseAgent):
         
         # Retornar solo los campos que se actualizan
         return {
-            "messages": [confirmation_message]
+            "messages": [confirmation_message],
+            "status": "waiting_confirmation",  # Cambiar estado a waiting_confirmation
+            "last_agent": "confirmation"  # Marcar que el agente confirmador respondió
             # updated_at se maneja automáticamente en BaseAgent
         }

@@ -6,26 +6,24 @@ en los diferentes nodos del grafo de conversación.
 """
 
 from .base_agent import BaseAgent
-from .niño_agent import NiñoAgent
-from .anciano_agent import AncianoAgent
 from .profesor_agent import ProfesorAgent
 from .summarizer_agent import SummarizerAgent
-from .router_agent import RouterAgent
+from .validate_reason_agent import ValidateReasonAgent
+from .evaluate_close_agent import EvaluateCloseAgent
 from .confirmation_agent import ConfirmationAgent
+from .end_conversation_agent import EndConversationAgent
 from .agent_config import *
 from .agent_utils import *
 
 __all__ = [
     "BaseAgent",
-    "NiñoAgent", 
-    "AncianoAgent",
     "ProfesorAgent",
     "SummarizerAgent",
-    "RouterAgent",
+    "ValidateReasonAgent",
+    "EvaluateCloseAgent",
     "ConfirmationAgent",
+    "EndConversationAgent",
     # Configuraciones
-    "NIÑO_AGENT_CONFIG",
-    "ANCIANO_AGENT_CONFIG", 
     "SUMMARIZER_AGENT_CONFIG",
     # Utilidades
     "build_system_prompt",

@@ -6,7 +6,6 @@ Un proyecto base de LangGraph que implementa un agente conversacional simple que
 
 - **1 Agente**: Un agente conversacional básico
 - **Router**: Nodo que decide aleatoriamente qué agente responde
-- **2 Nodos finales**: Niño (8 años) y Anciano (80 años) con personalidades distintas
 - **Checkpoints con SQLite**: Memoria persistente usando base de datos SQLite
 - **API FastAPI**: Interfaz HTTP para comunicarse con el agente
 - **Sin herramientas**: Implementación mínima sin herramientas externas
@@ -14,12 +13,14 @@ Un proyecto base de LangGraph que implementa un agente conversacional simple que
 ## Estructura del Grafo
 
 ```
-START → Router → [Niño | Anciano] → END
+START → ValidateReason → StateDecision → [Confirmation | EndConversation | Profesor] → END
 ```
 
-- **Router**: Selecciona aleatoriamente entre niño y anciano
-- **Niño**: Responde como un niño de 8 años con emoción y curiosidad
-- **Anciano**: Responde como un anciano sabio de 80 años con experiencia
+- **ValidateReason**: Valida si el usuario dio una razón válida
+- **StateDecision**: Decide el siguiente paso basado en el estado
+- **Confirmation**: Pide confirmación de la elección del usuario
+- **EndConversation**: Maneja el final de la conversación
+- **Profesor**: Continúa explorando opciones con el usuario
 
 ## Instalación
 

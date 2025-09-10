@@ -14,8 +14,10 @@ from langchain_core.messages import HumanMessage
 class ConversationStatus(Enum):
     GREETING = "greeting"
     EXPLORING = "exploring"
+    ASKING_CONFIRMATION = "asking_confirmation"
     WAITING_CONFIRMATION = "waiting_confirmation"
-    COMPLETED = "completed"
+    CONFIRMED = "confirmed"
+    END_CONVERSATION = "end_conversation"
 
 class StateManager:
     """Manager para manejar todas las modificaciones del estado"""

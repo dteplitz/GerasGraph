@@ -11,8 +11,6 @@ GerasGraph/
 ├── agents/                          # Paquete de agentes especializados
 │   ├── __init__.py                 # Exportaciones del paquete
 │   ├── base_agent.py               # Clase base para todos los agentes
-│   ├── niño_agent.py               # Agente que responde como un niño
-│   ├── anciano_agent.py            # Agente que responde como un anciano
 │   ├── summarizer_agent.py         # Agente que resume conversaciones
 │   ├── router_agent.py             # Agente que decide el flujo
 │   ├── agent_config.py             # Configuraciones centralizadas
@@ -72,15 +70,7 @@ class MiAgente(BaseAgent):
 
 ### 3. Agentes Especializados
 
-#### NiñoAgent
-- **Persona**: Niño de 8 años
-- **Estilo**: Infantil, emocional, curioso
-- **Lenguaje**: Simple, expresivo
 
-#### AncianoAgent
-- **Persona**: Anciano sabio de 80 años
-- **Estilo**: Experto, paciente, reflexivo
-- **Lenguaje**: Sabio, con lecciones de vida
 
 #### SummarizerAgent
 - **Función**: Crear y extender resúmenes
@@ -115,7 +105,7 @@ class MiAgente(BaseAgent):
 ## Flujo de Datos
 
 ```
-Usuario → GraphInterface → RouterAgent → [NiñoAgent | AncianoAgent] → RouterAgent → [Continuar | SummarizerAgent]
+Usuario → GraphInterface → RouterAgent → → RouterAgent → [Continuar | SummarizerAgent]
 ```
 
 1. **Entrada**: Usuario envía mensaje
@@ -130,7 +120,7 @@ Usuario → GraphInterface → RouterAgent → [NiñoAgent | AncianoAgent] → R
 ### Campos del Estado
 - **`messages`**: Lista de mensajes de la conversación
 - **`summary`**: Resumen acumulativo de la conversación
-- **`status`**: Estado actual (greeting, exploring, waiting_confirmation, completed)
+- **`status`**: Estado actual (greeting, exploring, asking_confirmation, completed)
 - **`greeted`**: Boolean indicando si se saludó al usuario
 - **`reason`**: Razón de la conversación
 - **`question`**: Pregunta actual
