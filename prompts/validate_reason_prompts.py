@@ -135,12 +135,71 @@ NOTA:
 
 RESPUESTA:"""
 
+REASON_DETECTION_MONTO_INICIAL = """Analiza si el usuario ha especificado un monto inicial válido.
+
+PREGUNTA: {current_question}
+
+RESPUESTA DEL USUARIO: {user_message}
+
+INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
+{{"has_response": 1, "reason": "MONTO"}} donde MONTO es el valor numérico exacto que mencionó el usuario
+{{"has_response": 0, "reason": null}} si la respuesta es vaga o no especifica un monto
+
+## CRITERIOS PARA RESPUESTA VÁLIDA (has_response: 1):
+✅ Extraer el monto exacto mencionado:
+- "100000 pesos" → {{"has_response": 1, "reason": "100000"}}
+- "1M" → {{"has_response": 1, "reason": "1000000"}}
+- "USD 50000" → {{"has_response": 1, "reason": "50000"}}
+- "500K" → {{"has_response": 1, "reason": "500000"}}
+- "nada/cero/0" → {{"has_response": 1, "reason": "0"}}
+
+## CRITERIOS PARA RESPUESTA INVÁLIDA (has_response: 0):
+❌ Montos vagos: "algo de dinero", "lo que tenga"
+❌ Sin montos: "no sé", "veremos"
+❌ Respuestas genéricas: "ok", "bien", "después veo"
+
+NOTA: 
+1. Siempre devolver el monto como número sin símbolos de moneda ni puntos/comas
+2. Si el usuario indica que no tiene monto inicial, devolver "0"
+
+RESPUESTA:"""
+
+REASON_DETECTION_APORTE_MENSUAL = """Analiza si el usuario ha especificado un monto de aporte mensual válido.
+
+PREGUNTA: {current_question}
+
+RESPUESTA DEL USUARIO: {user_message}
+
+INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
+{{"has_response": 1, "reason": "MONTO"}} donde MONTO es el valor numérico mensual exacto que mencionó el usuario
+{{"has_response": 0, "reason": null}} si la respuesta es vaga o no especifica un monto
+
+## CRITERIOS PARA RESPUESTA VÁLIDA (has_response: 1):
+✅ Extraer el monto mensual exacto:
+- "50000 por mes" → {{"has_response": 1, "reason": "50000"}}
+- "1000 mensuales" → {{"has_response": 1, "reason": "1000"}}
+- "USD 500 al mes" → {{"has_response": 1, "reason": "500"}}
+- "12000 anuales" → {{"has_response": 1, "reason": "1000"}} (dividir entre 12)
+- "nada/cero/0" → {{"has_response": 1, "reason": "0"}}
+
+## CRITERIOS PARA RESPUESTA INVÁLIDA (has_response: 0):
+❌ Montos vagos: "lo que pueda", "un poco"
+❌ Sin periodicidad clara: "1000" (sin especificar si es mensual)
+❌ Respuestas genéricas: "ok", "bien", "después veo"
+
+NOTA: 
+1. Siempre devolver el monto como número sin símbolos de moneda ni puntos/comas
+2. Si el monto es anual, dividirlo entre 12 para obtener el valor mensual
+3. Si el usuario indica que no puede aportar, devolver "0"
+
+RESPUESTA:"""
+
 # Mapeo simple por tipo de pregunta (enum string) → prompt específico
 REASON_DETECTION_BY_TYPE = {
     "tipo_objetivo": REASON_DETECTION_TIPO_OBJETIVO_PROMPT,
     "objetivo_monto_final": REASON_DETECTION_OBJETIVO_MONTO_FINAL,
     "objetivo_renta": REASON_DETECTION_OBJETIVO_RENTA,
     "objetivo_duracion": REASON_DETECTION_OBJETIVO_DURACION,
-    "monto_inicial": GENERIC_REASON_DETECTION_PROMPT,
-    "aporte_mensual": GENERIC_REASON_DETECTION_PROMPT
+    "monto_inicial": REASON_DETECTION_MONTO_INICIAL,
+    "aporte_mensual": REASON_DETECTION_APORTE_MENSUAL
 }

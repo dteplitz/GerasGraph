@@ -49,13 +49,21 @@ GREETING_BY_TYPE = {
         ),
         "question": "¿Por cuántos años o meses querés sostener el plan?"
     },
-    # Otras preguntas simples
+    # Preguntas sobre montos
     QuestionType.MONTO_INICIAL.value: {
-        "greeting": "¿Con qué monto inicial contás?",
-        "question": "¿Con qué monto inicial contás?"
+        "greeting": (
+            "Ahora necesito saber con qué monto inicial contás para arrancar.\n"
+            "Puede ser cualquier valor, incluso cero si arrancás de cero.\n"
+            "Por ejemplo: 100.000 pesos, 1M, 500K, USD 5000, o simplemente 0 si no tenés monto inicial."
+        ),
+        "question": "¿Con qué monto inicial contás para empezar?"
     },
     QuestionType.APORTE_MENSUAL.value: {
-        "greeting": "¿Cuánto podés aportar por mes?",
+        "greeting": (
+            "¿Cuánto podrías aportar mensualmente al plan?\n"
+            "Pensá en un monto que puedas mantener de forma constante.\n"
+            "Por ejemplo: 50.000 por mes, 1000 USD mensuales, o si preferís podés decirme un monto anual y lo dividimos en 12."
+        ),
         "question": "¿Cuánto podés aportar por mes?"
     }
 }
