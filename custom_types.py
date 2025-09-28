@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, AIMessage
 from langgraph.graph import MessagesState
+from enum import Enum
 
 # Tipo para el estado del grafo
 State = MessagesState
@@ -39,6 +40,13 @@ ConversationReason = Optional[str]
 
 # Tipo para preguntas
 Question = Optional[str]
+
+# Enum para tipo de pregunta controlada
+class QuestionType(Enum):
+    TIPO_OBJETIVO = "tipo_objetivo"
+    OBJETIVO = "objetivo"
+    MONTO_INICIAL = "monto_inicial"
+    APORTE_MENSUAL = "aporte_mensual"
 
 # Tipo para status de conversación
 ConversationStatus = str

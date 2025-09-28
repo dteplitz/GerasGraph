@@ -48,18 +48,31 @@ class ProfesorAgent(BaseAgent):
         
         # Importar la configuración del agente profesor
         from prompts import PROFESOR_AGENT_CONFIG, PROFESOR_WITH_SUMMARY_PROMPT
+        from prompts.profesor_prompts import PROFESOR_BASE_BY_TYPE
+        from prompts.greeting_prompts import GREETING_BY_TYPE
         
         # Get summary if it exists
         summary = state.get("summary", "")
+        # Resolver cuestión legible (si la pregunta es enum key)
+        current_question = state.get("question", "")
+        readable_question = GREETING_BY_TYPE.get(current_question, current_question)
         
+        # Seleccionar base por tipo de pregunta (fallback a base genérica)
+        base_template = PROFESOR_BASE_BY_TYPE.get(current_question, PROFESOR_AGENT_CONFIG['base_prompt'])
+        # Rellenar plantilla con la pregunta legible si aplica
+        try:
+            base_filled = base_template.format(question=readable_question)
+        except Exception:
+            base_filled = base_template
+
         # Create system message with summary context if available
         if summary:
             system_content = PROFESOR_WITH_SUMMARY_PROMPT.format(
-                base_prompt=PROFESOR_AGENT_CONFIG['base_prompt'],
+                base_prompt=base_filled,
                 summary=summary
             )
         else:
-            system_content = PROFESOR_AGENT_CONFIG['base_prompt']
+            system_content = base_filled
         
         system_message = SystemMessage(content=system_content)
         

@@ -8,7 +8,8 @@ en respuesta a una pregunta y determina el flujo inicial de la conversación.
 from typing import Dict, Any, Literal
 from langchain_core.messages import SystemMessage, HumanMessage
 from .base_agent import BaseAgent
-from prompts.validate_reason_prompts import REASON_DETECTION_PROMPT
+from prompts.validate_reason_prompts import REASON_DETECTION_BY_TYPE, GENERIC_REASON_DETECTION_PROMPT
+from prompts.greeting_prompts import GREETING_BY_TYPE
 
 class ValidateReasonAgent(BaseAgent):
     """Agente que valida si el usuario dio una razón válida"""
@@ -115,9 +116,15 @@ class ValidateReasonAgent(BaseAgent):
         if not user_message:
             return state
 
+        # Resolver texto legible de la pregunta si es enum key
+        readable_question = GREETING_BY_TYPE.get(current_question, current_question)
+
+        # Seleccionar prompt según tipo (enum), fallback genérico
+        prompt_template = REASON_DETECTION_BY_TYPE.get(current_question, GENERIC_REASON_DETECTION_PROMPT)
+
         # Crear el prompt para detectar respuestas
-        detection_prompt = REASON_DETECTION_PROMPT.format(
-            current_question=current_question,
+        detection_prompt = prompt_template.format(
+            current_question=readable_question,
             user_message=user_message
         )
 

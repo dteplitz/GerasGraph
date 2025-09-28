@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from custom_types import QuestionType
 from typing import List, Optional
 from chat_service import ChatService
 from config import Config
@@ -38,6 +39,7 @@ chat_service = ChatService()
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+    question: QuestionType | str
 
 class ChatResponse(BaseModel):
     response: str
@@ -54,7 +56,7 @@ async def chat(request: ChatRequest):
     """Endpoint para chatear con el agente"""
     try:
         # Procesar el mensaje a través del servicio
-        result = chat_service.process_chat_message(request.message, request.session_id)
+        result = chat_service.process_chat_message(request.message, request.session_id, request.question)
         
         if result["success"]:
             return ChatResponse(

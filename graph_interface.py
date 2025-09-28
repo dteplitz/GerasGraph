@@ -5,6 +5,7 @@ from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
 from config import Config
+from prompts.greeting_prompts import GREETING_BY_TYPE
 from typing import Dict, Any, Optional, Literal
 from log_manager import get_log_manager
 from datetime import datetime
@@ -63,9 +64,17 @@ def call_greet_agent(state: State):
     
     # Importar el mensaje de bienvenida desde prompts
     from prompts import GREETING_MESSAGE
+    from prompts.greeting_prompts import GREETING_BY_TYPE
     
-    # Crear mensaje de bienvenida
-    welcome_message = AIMessage(content=GREETING_MESSAGE)
+    # Resolver pregunta actual y crear mensaje de bienvenida dinámico
+    current_question = state.get("question") or "¿Qué te gustaría resolver hoy?"
+    # Si la pregunta almacenada es una clave del enum, usar su saludo directo
+    if current_question in GREETING_BY_TYPE:
+        welcome_text = GREETING_BY_TYPE[current_question]
+    else:
+        # De lo contrario, usar plantilla genérica con el texto recibido
+        welcome_text = GREETING_MESSAGE
+    welcome_message = AIMessage(content=welcome_text)
     
     # Retornar el mensaje de bienvenida y marcar como saludado
     # También actualizar el status y establecer la pregunta actual
@@ -73,7 +82,7 @@ def call_greet_agent(state: State):
         "messages": [welcome_message], 
         "greeted": True,
         "status": "exploring",  # Cambiar de "greeting" a "exploring"
-        "question": "¿Qué tipo de plan te gustaría elegir? Puedes decirme si prefieres Monto final, Renta, Duración, o si tienes dudas sobre alguno.",
+        "question": state.get("question", current_question), # "¿Qué tipo de plan te gustaría elegir? Puedes decirme si prefieres Monto final, Renta, Duración, o si tienes dudas sobre alguno."
         "last_agent": "greet"  # Marcar que el agente de saludo respondió
     }
 
@@ -362,7 +371,7 @@ class GraphInterface:
         # Compile
         return workflow.compile(checkpointer=memory)
     
-    def process_message(self, message: str, session_id: str, user: Optional[str] = None) -> Dict[str, Any]:
+    def process_message(self, message: str, session_id: str, user: Optional[str] = None, question: str = "") -> Dict[str, Any]:
         """Procesar un mensaje a través del grafo"""
         user_message = HumanMessage(content=message)
         
@@ -387,13 +396,21 @@ class GraphInterface:
                     # Si es el primer mensaje de la sesión, establecer el usuario
                     if not initial_state.get("user") and user:
                         initial_state["user"] = user
+                    
+                    # Establecer la pregunta (enum key) solo si aún no existe
+                    if not initial_state.get("question"):
+                        initial_state["question"] = question
                         
                 else:
                     # Si no hay mensajes, crear estado nuevo
                     initial_state = self.state_manager.create_initial_state(user_message, user)
+                    # Setear pregunta
+                    initial_state["question"] = question
             else:
                 # Si no hay estado existente, crear uno nuevo
                 initial_state = self.state_manager.create_initial_state(user_message, user)
+                # Setear pregunta como enum (string)
+                initial_state["question"] = question
                 
         except Exception as e:
             # Si hay algún error al recuperar el estado, crear uno nuevo

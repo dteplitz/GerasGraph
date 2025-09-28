@@ -1,4 +1,5 @@
 from typing import Dict, Any
+from custom_types import QuestionType
 from graph_interface import GraphInterface
 from config import Config
 
@@ -9,11 +10,16 @@ class ChatService:
         """Inicializar el servicio con la interfaz del grafo"""
         self.graph_interface = GraphInterface()
     
-    def process_chat_message(self, message: str, session_id: str) -> Dict[str, Any]:
+    def process_chat_message(self, message: str, session_id: str, question: str | QuestionType) -> Dict[str, Any]:
         """Procesar un mensaje de chat y retornar la respuesta"""
         try:
+            # Normalizar question: si es enum, usar su valor string
+            if isinstance(question, QuestionType):
+                question_value = question.value
+            else:
+                question_value = question
             # Procesar el mensaje a través del grafo
-            result = self.graph_interface.process_message(message, session_id)
+            result = self.graph_interface.process_message(message, session_id, user=None, question=question_value)
             
             # Obtener la respuesta
             if result["messages"]:

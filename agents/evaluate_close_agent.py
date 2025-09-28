@@ -102,15 +102,28 @@ class EvaluateCloseAgent(BaseAgent):
 
         # Preparar mensajes para el modelo
         system_message = SystemMessage(content=decision_prompt)
-        human_message = HumanMessage(content="Decide el siguiente paso basado en el estado actual")
-        messages_for_analysis = [system_message, human_message]
+        messages = state.get("messages", [])
+        if not messages:
+            return state
+
+        # Obtener el último mensaje del usuario
+        user_message = ""
+        if messages:
+            # En LangGraph, el último mensaje es el más reciente
+            last_message = messages[-1]
+            user_message = last_message.content
+
+        if not user_message:
+            return state
+
+        messages_for_analysis = [system_message, user_message]
         
         # Usar el modelo para decidir
         response = self.model.invoke(messages_for_analysis)
         
         # Parsear la decisión
         decision = self._parse_decision_response(response.content)
-        
+
         # Log del resultado
         print(f"[EvaluateClose] Decisión tomada: {decision}")
         
