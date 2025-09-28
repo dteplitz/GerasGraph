@@ -119,7 +119,7 @@ class ValidateReasonAgent(BaseAgent):
         # Resolver texto legible de la pregunta si es enum key
         readable_question = GREETING_BY_TYPE.get(current_question, current_question)
 
-        # Seleccionar prompt según tipo (enum), fallback genérico
+        # Seleccionar prompt directamente por el enum de la pregunta (incluye OBJETIVO_*)
         prompt_template = REASON_DETECTION_BY_TYPE.get(current_question, GENERIC_REASON_DETECTION_PROMPT)
 
         # Crear el prompt para detectar respuestas

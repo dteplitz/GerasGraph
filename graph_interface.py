@@ -68,11 +68,14 @@ def call_greet_agent(state: State):
     
     # Resolver pregunta actual y crear mensaje de bienvenida dinámico
     current_question = state.get("question") or "¿Qué te gustaría resolver hoy?"
-    # Si la pregunta almacenada es una clave del enum, usar su saludo directo
-    if current_question in GREETING_BY_TYPE:
-        welcome_text = GREETING_BY_TYPE[current_question]
+    # Seleccionar saludo directamente por enum value de pregunta
+    mapping = GREETING_BY_TYPE.get(current_question)
+    # Determinar texto de bienvenida
+    if isinstance(mapping, dict):
+        welcome_text = mapping.get("greeting", GREETING_MESSAGE)
+    elif isinstance(mapping, str):
+        welcome_text = mapping
     else:
-        # De lo contrario, usar plantilla genérica con el texto recibido
         welcome_text = GREETING_MESSAGE
     welcome_message = AIMessage(content=welcome_text)
     
@@ -82,7 +85,8 @@ def call_greet_agent(state: State):
         "messages": [welcome_message], 
         "greeted": True,
         "status": "exploring",  # Cambiar de "greeting" a "exploring"
-        "question": state.get("question", current_question), # "¿Qué tipo de plan te gustaría elegir? Puedes decirme si prefieres Monto final, Renta, Duración, o si tienes dudas sobre alguno."
+        # Conservar el enum en estado; la UI/agents pueden resolver el texto por mapping
+        "question": state.get("question", current_question),
         "last_agent": "greet"  # Marcar que el agente de saludo respondió
     }
 
@@ -371,9 +375,27 @@ class GraphInterface:
         # Compile
         return workflow.compile(checkpointer=memory)
     
-    def process_message(self, message: str, session_id: str, user: Optional[str] = None, question: str = "") -> Dict[str, Any]:
-        """Procesar un mensaje a través del grafo"""
+    def process_message(self, message: str, session_id: str, user: Optional[str] = None, question: str = "", tipo_objetivo: Optional[str] = None) -> Dict[str, Any]:
+        """Procesar un mensaje a través del grafo
+        
+        Args:
+            message: El mensaje del usuario
+            session_id: ID de la sesión
+            user: Usuario opcional
+            question: Tipo de pregunta actual
+            tipo_objetivo: Si la pregunta es objetivo, especifica el tipo elegido previamente
+        """
         user_message = HumanMessage(content=message)
+        
+        # Ajustar el tipo de pregunta basado en tipo_objetivo si es necesario
+        if question == "objetivo" and tipo_objetivo:
+            if tipo_objetivo == "Monto final":
+                question = "objetivo_monto_final"
+            elif tipo_objetivo == "Renta":
+                question = "objetivo_renta"
+            elif tipo_objetivo == "Duración":
+                question = "objetivo_duracion"
+            print(f"[GraphInterface] Ajustando pregunta objetivo según tipo: {question}")
         
         # Intentar recuperar el estado existente del checkpoint
         try:
@@ -397,9 +419,8 @@ class GraphInterface:
                     if not initial_state.get("user") and user:
                         initial_state["user"] = user
                     
-                    # Establecer la pregunta (enum key) solo si aún no existe
-                    if not initial_state.get("question"):
-                        initial_state["question"] = question
+                    # Actualizar la pregunta con el nuevo tipo
+                    initial_state["question"] = question
                         
                 else:
                     # Si no hay mensajes, crear estado nuevo
@@ -409,7 +430,7 @@ class GraphInterface:
             else:
                 # Si no hay estado existente, crear uno nuevo
                 initial_state = self.state_manager.create_initial_state(user_message, user)
-                # Setear pregunta como enum (string)
+                # Setear pregunta
                 initial_state["question"] = question
                 
         except Exception as e:

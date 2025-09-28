@@ -56,7 +56,11 @@ async def chat(request: ChatRequest):
     """Endpoint para chatear con el agente"""
     try:
         # Procesar el mensaje a través del servicio
-        result = chat_service.process_chat_message(request.message, request.session_id, request.question)
+        result = chat_service.process_chat_message(
+            message=request.message,
+            session_id=request.session_id,
+            question=request.question
+        )
         
         if result["success"]:
             return ChatResponse(

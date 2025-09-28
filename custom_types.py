@@ -44,7 +44,9 @@ Question = Optional[str]
 # Enum para tipo de pregunta controlada
 class QuestionType(Enum):
     TIPO_OBJETIVO = "tipo_objetivo"
-    OBJETIVO = "objetivo"
+    OBJETIVO_MONTO_FINAL = "objetivo_monto_final"
+    OBJETIVO_RENTA = "objetivo_renta"
+    OBJETIVO_DURACION = "objetivo_duracion"
     MONTO_INICIAL = "monto_inicial"
     APORTE_MENSUAL = "aporte_mensual"
 

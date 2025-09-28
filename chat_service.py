@@ -11,13 +11,21 @@ class ChatService:
         self.graph_interface = GraphInterface()
     
     def process_chat_message(self, message: str, session_id: str, question: str | QuestionType) -> Dict[str, Any]:
-        """Procesar un mensaje de chat y retornar la respuesta"""
+        """Procesar un mensaje de chat y retornar la respuesta
+        
+        Args:
+            message: El mensaje del usuario
+            session_id: ID de la sesión
+            question: Tipo de pregunta actual
+            tipo_objetivo: Si la pregunta es de objetivo, especifica el tipo elegido previamente
+        """
         try:
             # Normalizar question: si es enum, usar su valor string
             if isinstance(question, QuestionType):
                 question_value = question.value
             else:
                 question_value = question
+            # Se espera que question ya sea una de las variantes de QuestionType (incluyendo OBJETIVO_*)
             # Procesar el mensaje a través del grafo
             result = self.graph_interface.process_message(message, session_id, user=None, question=question_value)
             
