@@ -35,6 +35,46 @@ def format_messages_for_logging(messages: List[BaseMessage]) -> str:
     """
     return "\n".join([f"{msg.type}: {msg.content}" for msg in messages])
 
+def extract_text_from_content(content: Any) -> str:
+    """Extrae texto de content que puede ser str, dict o lista de bloques.
+    
+    Args:
+        content: Contenido que puede ser string, dict o lista de bloques
+        
+    Returns:
+        Texto extraído y concatenado
+    """
+    try:
+        # Caso simple: string
+        if isinstance(content, str):
+            return content
+        # Caso dict (p. ej. {"type": "text", "text": "..."})
+        if isinstance(content, dict):
+            if "text" in content and isinstance(content["text"], str):
+                return content["text"]
+            # Fallback a stringify
+            return str(content)
+        # Caso lista de bloques (RAG/tool events + text)
+        if isinstance(content, list):
+            text_parts: list[str] = []
+            for block in content:
+                # Bloques como {"type": "text", "text": "..."}
+                if isinstance(block, dict):
+                    block_type = block.get("type")
+                    if block_type == "text" and isinstance(block.get("text"), str):
+                        text_parts.append(block["text"])
+                    # Algunos providers usan {"text": "..."} sin type
+                    elif "text" in block and isinstance(block.get("text"), str):
+                        text_parts.append(block["text"])
+                    # Ignorar tool_use, tool_result, file_search_call, etc.
+                elif isinstance(block, str):
+                    text_parts.append(block)
+            return "\n\n".join([p for p in text_parts if p]) or str(content)
+        # Fallback genérico
+        return str(content)
+    except Exception:
+        return str(content)
+
 def extract_response_content(response) -> str:
     """
     Extraer el contenido de la respuesta del modelo de forma segura.
@@ -46,11 +86,11 @@ def extract_response_content(response) -> str:
         Contenido de la respuesta como string
     """
     if hasattr(response, 'content'):
-        return response.content
+        return extract_text_from_content(response.content)
     elif isinstance(response, str):
         return response
     elif isinstance(response, dict) and 'content' in response:
-        return response['content']
+        return extract_text_from_content(response['content'])
     else:
         return str(response)
 

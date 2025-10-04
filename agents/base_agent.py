@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any
 from log_manager import get_log_manager
 from datetime import datetime
+from .agent_utils import extract_text_from_content
 
 class BaseAgent(ABC):
     """Clase base abstracta para todos los agentes"""
@@ -70,15 +71,8 @@ class BaseAgent(ABC):
                 # Obtener el último mensaje (que debería ser la respuesta del agente)
                 last_message = result["messages"][-1]
                 
-                # Si es un mensaje de LangChain, extraer el contenido
-                if hasattr(last_message, 'content'):
-                    return last_message.content
-                # Si es un diccionario, buscar el campo content
-                elif isinstance(last_message, dict) and 'content' in last_message:
-                    return last_message['content']
-                # Fallback: convertir a string
-                else:
-                    return str(last_message)
+                # Extraer contenido de forma segura
+                return extract_text_from_content(getattr(last_message, 'content', last_message))
             
             # Si no hay mensajes, buscar otros campos que puedan contener la respuesta
             for key in ['response', 'answer', 'output', 'result']:

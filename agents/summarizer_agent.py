@@ -5,15 +5,41 @@ Este agente se encarga de crear y extender resúmenes de las conversaciones.
 """
 
 from typing import Dict, Any
-from langchain_core.messages import HumanMessage, RemoveMessage
+from langchain_core.messages import HumanMessage, RemoveMessage, AIMessage
 from .base_agent import BaseAgent
 
 class SummarizerAgent(BaseAgent):
     """Agente que resume las conversaciones"""
     
-    def __init__(self, model):
-        """Inicializar el agente con el modelo LLM"""
-        super().__init__(model, "summarize_conversation")
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        """Implementar patrón Singleton"""
+        if cls._instance is None:
+            cls._instance = super(SummarizerAgent, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Inicializar el agente summarizer solo una vez"""
+        if not self._initialized:
+            # Configurar el modelo específico para el summarizer
+            from langchain_groq import ChatGroq
+            from config import Config
+            
+            # Crear modelo específico del summarizer
+            self.model = ChatGroq(
+                api_key=Config.GROQ_API_KEY,
+                model=Config.GROQ_MODEL,
+                temperature=0.3,  # Baja temperatura para resúmenes más precisos
+                max_tokens=800    # Tokens suficientes para resúmenes detallados
+            )
+            
+            # Llamar al constructor padre con el modelo configurado
+            super().__init__(self.model, "summarizer")
+            
+            # Marcar como inicializado
+            self._initialized = True
     
     def _process_state(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Procesar el estado y crear/extender el resumen"""
@@ -46,12 +72,19 @@ class SummarizerAgent(BaseAgent):
         # Invocar el modelo
         response = self.model.invoke(messages)
         
-        # Eliminar todos los mensajes excepto los 2 más recientes y agregar el resumen al estado
+        # Extraer el texto de la respuesta de forma segura
+        from .agent_utils import extract_text_from_content
+        summary_text = extract_text_from_content(getattr(response, "content", response))
+        
+        # Eliminar todos los mensajes excepto los 2 más recientes
         delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-2]]
+        
+        # Crear mensaje de respuesta
+        response_message = AIMessage(content=summary_text)
         
         # Retornar el resultado
         return {
-            "summary": response.content, 
-            "messages": delete_messages,
-            "updated_at": None  # Se maneja automáticamente en BaseAgent
+            "summary": summary_text,
+            "messages": delete_messages + [response_message],
+            "last_agent": "summarizer"  # Consistente con otros agentes
         }

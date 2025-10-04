@@ -2,6 +2,7 @@ from typing import Dict, Any
 from custom_types import QuestionType
 from graph_interface import GraphInterface
 from config import Config
+from agents.agent_utils import extract_text_from_content
 
 class ChatService:
     """Servicio para manejar la lógica de negocio del chat"""
@@ -32,7 +33,7 @@ class ChatService:
             # Obtener la respuesta
             if result["messages"]:
                 last_message = result["messages"][-1]
-                response_text = last_message.content
+                response_text = extract_text_from_content(getattr(last_message, "content", last_message))
                 
                 # Obtener el tipo de agente directamente del estado (más eficiente)
                 agent_type = result.get("last_agent", "unknown")

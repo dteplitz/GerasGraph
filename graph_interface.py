@@ -44,11 +44,11 @@ def call_profesor_agent(state: State):
     """Nodo que responde como un profesor"""
     print("---Profesor Node---")
     
-    # Importar y usar la clase ProfesorAgent optimizada
-    from agents import ProfesorAgent
+    # Importar y usar la versión OpenAI del profesor
+    from agents import ProfesorOpenAIAgent
     
     # Crear instancia del agente y procesar el estado
-    profesor_agent = ProfesorAgent()
+    profesor_agent = ProfesorOpenAIAgent()
     result = profesor_agent.invoke(state)  # ← Usar invoke() en lugar de process_state()
     
     # Asegurar que se incluya last_agent en el resultado
@@ -95,33 +95,15 @@ def summarize_conversation(state: State):
     """Nodo que resume la conversación"""
     print("---Resumen de Conversación---")
     
-    # Importar los prompts de resumen
-    from prompts import SUMMARY_EXTEND_PROMPT, SUMMARY_CREATE_PROMPT, SUMMARY_EXTEND_WITH_CONTEXT
+    # Crear instancia del agente y procesar el estado
+    summarizer_agent = SummarizerAgent()
+    result = summarizer_agent.invoke(state)
     
-    # Obtener el resumen existente si existe
-    summary = state.get("summary", "")
+    # Asegurar que se incluya last_agent en el resultado
+    if "last_agent" not in result:
+        result["last_agent"] = "summarizer"
     
-    # Crear el prompt de resumen
-    if summary:
-        summary_message = SUMMARY_EXTEND_WITH_CONTEXT.format(
-            summary=summary,
-            extend_prompt=SUMMARY_EXTEND_PROMPT
-        )
-    else:
-        summary_message = SUMMARY_CREATE_PROMPT
-    
-    # Agregar el prompt a nuestro historial
-    messages = state["messages"] + [HumanMessage(content=summary_message)]
-    
-    response = model.invoke(messages)
-    
-    # Eliminar todos los mensajes excepto los 2 más recientes y agregar el resumen al estado
-    delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-2]]
-    
-    return {
-        "summary": response.content, 
-        "messages": delete_messages
-    }
+    return result
 
 # Importar ValidateReasonAgent para usar su lógica
 from agents import ValidateReasonAgent

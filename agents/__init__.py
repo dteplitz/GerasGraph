@@ -6,7 +6,12 @@ en los diferentes nodos del grafo de conversación.
 """
 
 from .base_agent import BaseAgent
-from .profesor_agent import ProfesorAgent
+from .profesor_openai_agent import ProfesorOpenAIAgent as ProfesorOpenAIAgent
+from .profesor_agent import ProfesorAgent as GroqProfesorAgent
+
+# Alias por defecto: exponer ProfesorAgent apuntando a la versión OpenAI
+ProfesorAgent = ProfesorOpenAIAgent
+
 from .summarizer_agent import SummarizerAgent
 from .validate_reason_agent import ValidateReasonAgent
 from .evaluate_close_agent import EvaluateCloseAgent
@@ -18,6 +23,8 @@ from .agent_utils import *
 __all__ = [
     "BaseAgent",
     "ProfesorAgent",
+    "ProfesorOpenAIAgent",
+    "GroqProfesorAgent",
     "SummarizerAgent",
     "ValidateReasonAgent",
     "EvaluateCloseAgent",
