@@ -32,6 +32,14 @@ app = FastAPI(title="Agente LangGraph API", version="1.0.0")
 # Aplicar el stack completo de middleware
 app = create_middleware_stack(app)
 
+# Log seguro de configuración en startup (sin exponer secretos)
+@app.on_event("startup")
+def _log_startup_config():
+    try:
+        Config.print_config()
+    except Exception as e:
+        print(f"No se pudo imprimir la configuración: {e}")
+
 # Inicializar el servicio de chat
 chat_service = ChatService()
 

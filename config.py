@@ -22,6 +22,11 @@ class Config:
     # Temperatura del modelo (opcional)
     GROQ_TEMPERATURE: float = float(os.getenv("GROQ_TEMPERATURE", "0.1"))
     
+    # Configuración de OpenAI (opcional)
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    OPENAI_VECTOR_STORE_ID: str = os.getenv("OPENAI_VECTOR_STORE_ID", "")
+    
     # Ruta de la base de datos SQLite (opcional)
     DB_PATH: str = os.getenv("DB_PATH", "agent_memory.db")
     
@@ -42,9 +47,15 @@ class Config:
     def print_config(cls):
         """Imprime la configuración actual (sin mostrar la API key)"""
         print("Configuración actual:")
-        print(f"  Modelo: {cls.GROQ_MODEL}")
-        print(f"  Temperatura: {cls.GROQ_TEMPERATURE}")
+        # Groq
+        print(f"  Groq Modelo: {cls.GROQ_MODEL}")
+        print(f"  Groq Temperatura: {cls.GROQ_TEMPERATURE}")
+        print(f"  Groq API Key configurada: {'Sí' if cls.GROQ_API_KEY else 'No'}")
+        # OpenAI
+        print(f"  OpenAI Modelo: {cls.OPENAI_MODEL}")
+        print(f"  OpenAI API Key configurada: {'Sí' if cls.OPENAI_API_KEY else 'No'}")
+        print(f"  OpenAI Vector Store configurado: {'Sí' if cls.OPENAI_VECTOR_STORE_ID else 'No'}")
+        # Otros
         print(f"  Base de datos: {cls.DB_PATH}")
         print(f"  Sesión: {cls.SESSION_ID}")
-        print(f"  API Key configurada: {'Sí' if cls.GROQ_API_KEY else 'No'}")
 

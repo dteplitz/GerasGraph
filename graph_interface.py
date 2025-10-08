@@ -14,13 +14,6 @@ from datetime import datetime
 from state_manager import StateManager, ConversationStatus
 from agents import ProfesorAgent, SummarizerAgent, ValidateReasonAgent, EvaluateCloseAgent, EndConversationAgent
 
-# We will use this model for both the conversation and the summarization
-model = ChatGroq(
-    api_key=Config.GROQ_API_KEY,
-    model=Config.GROQ_MODEL,
-    temperature=Config.GROQ_TEMPERATURE
-)
-
 
 
 # State class to store messages and summary

@@ -10,4 +10,5 @@ uvicorn
 pydantic
 requests
 python-dotenv
+langchain-openai
 
