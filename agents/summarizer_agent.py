@@ -5,7 +5,7 @@ Este agente se encarga de crear y extender resúmenes de las conversaciones.
 """
 
 from typing import Dict, Any
-from langchain_core.messages import HumanMessage, RemoveMessage, AIMessage
+from langchain_core.messages import HumanMessage, RemoveMessage
 from .base_agent import BaseAgent
 
 class SummarizerAgent(BaseAgent):
@@ -79,12 +79,9 @@ class SummarizerAgent(BaseAgent):
         # Eliminar todos los mensajes excepto los 2 más recientes
         delete_messages = [RemoveMessage(id=m.id) for m in state["messages"][:-2]]
         
-        # Crear mensaje de respuesta
-        response_message = AIMessage(content=summary_text)
-        
         # Retornar el resultado
         return {
             "summary": summary_text,
-            "messages": delete_messages + [response_message],
+            "messages": delete_messages,
             "last_agent": "summarizer"  # Consistente con otros agentes
         }
