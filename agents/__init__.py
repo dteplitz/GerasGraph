@@ -14,6 +14,7 @@ ProfesorAgent = ProfesorOpenAIAgent
 
 from .summarizer_agent import SummarizerAgent
 from .validate_reason_agent import ValidateReasonAgent
+from .validate_message_agent import ValidateMessageAgent
 from .evaluate_close_agent import EvaluateCloseAgent
 from .confirmation_agent import ConfirmationAgent
 from .end_conversation_agent import EndConversationAgent
@@ -27,6 +28,7 @@ __all__ = [
     "GroqProfesorAgent",
     "SummarizerAgent",
     "ValidateReasonAgent",
+    "ValidateMessageAgent",
     "EvaluateCloseAgent",
     "ConfirmationAgent",
     "EndConversationAgent",

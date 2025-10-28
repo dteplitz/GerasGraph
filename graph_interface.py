@@ -12,7 +12,7 @@ from datetime import datetime
 
 # Importar desde archivos separados
 from state_manager import StateManager, ConversationStatus
-from agents import ProfesorAgent, SummarizerAgent, ValidateReasonAgent, EvaluateCloseAgent, EndConversationAgent
+from agents import ProfesorAgent, SummarizerAgent, ValidateReasonAgent, ValidateMessageAgent, EvaluateCloseAgent, EndConversationAgent
 
 
 
@@ -27,6 +27,7 @@ class State(MessagesState):
     updated_at: datetime
     user: Optional[str]
     last_agent: Optional[str]  # Agregar campo para trackear el último agente
+    onTopic: Optional[bool]  # Campo para validar si el mensaje está dentro del tópico
 
 
 
@@ -110,6 +111,8 @@ evaluate_close_agent = EvaluateCloseAgent()
 # Instancia global del EndConversationAgent
 end_conversation_agent = EndConversationAgent()
 
+validate_message_agent = ValidateMessageAgent()
+
 # Define the logic for the validate reason node
 def validate_reason_node(state: State) -> State:
     """Nodo que valida si el usuario dio una razón válida"""
@@ -130,6 +133,12 @@ def end_conversation_node(state: State) -> State:
     print("---End Conversation Node---")
     # Procesar el estado usando el EndConversationAgent y retornar el estado modificado
     return end_conversation_agent._process_state(state)
+
+# Define the logic for the validate message node
+def validate_message_node(state: State) -> State:
+    """Nodo que valida si el mensaje está dentro del tópico"""
+    print("---Validate Message Node---")
+    return validate_message_agent._process_state(state)
 
 # Define the logic for the conversation closed node
 def conversation_closed_node(state: State) -> State:
@@ -176,9 +185,22 @@ def route_to_agent(state: State) -> str:
         print("Router seleccionó: greet (primera vez)")
         return "greet"
     
-    # Si ya se saludó, ir al validate_reason para validar la respuesta del usuario
-    print("Router seleccionó: validate_reason (ya saludado, validar respuesta)")
-    return "validate_reason"
+    # Si ya se saludó, ir al validate_message para validar el mensaje del usuario
+    print("Router seleccionó: validate_message (ya saludado, validar mensaje)")
+    return "validate_message"
+
+# Define the logic to route after the validate_message has processed the state
+def route_after_validate_message(state: State) -> str:
+    """Función que decide el siguiente nodo después de validar el mensaje"""
+    # Read the onTopic field from state (set by validate_message_node)
+    on_topic = state.get("onTopic", True)  # Default to True if not set
+    
+    if on_topic:
+        print("ValidateMessage seleccionó: validate_reason (mensaje válido)")
+        return "validate_reason"
+    else:
+        print("ValidateMessage seleccionó: END (mensaje fuera de tópico)")
+        return "end"
 
 # Define the logic to route after the validate_reason has processed the state
 def route_after_validation(state: State) -> str:
@@ -265,6 +287,7 @@ class GraphInterface:
         
         # Add nodes using the pure functions
         workflow.add_node("greet", call_greet_agent)
+        workflow.add_node("validate_message", validate_message_node)  # Nodo que valida si el mensaje está en tópico
         workflow.add_node("validate_reason", validate_reason_node)  # Nodo validate reason que valida el estado
         workflow.add_node("evaluate_close", evaluate_close_node)  # Nodo que evalúa si cerrar
         workflow.add_node("confirmation", call_confirmation_agent)  # Nodo confirmador
@@ -279,7 +302,7 @@ class GraphInterface:
             route_to_agent,
             {
                 "greet": "greet",
-                "validate_reason": "validate_reason",
+                "validate_message": "validate_message",
                 "conversation_closed": "conversation_closed"
             }
         )
@@ -290,6 +313,16 @@ class GraphInterface:
         
         # El nodo conversation_closed siempre termina (conversación ya cerrada)
         workflow.add_edge("conversation_closed", END)
+        
+        # El validate_message va a la decisión de ruta
+        workflow.add_conditional_edges(
+            "validate_message",
+            route_after_validate_message,
+            {
+                "validate_reason": "validate_reason",
+                "end": END
+            }
+        )
         
         # El validate_reason va a la decisión de ruta
         workflow.add_conditional_edges(

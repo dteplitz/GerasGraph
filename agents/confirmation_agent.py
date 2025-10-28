@@ -50,8 +50,35 @@ class ConfirmationAgent(BaseAgent):
         # Obtener la razón del usuario del estado
         reason = state.get("reason", "")
         
-        # Crear el prompt de confirmación
-        confirmation_prompt = CONFIRMATION_PROMPT.format(reason=reason)
+        # Obtener el tipo de pregunta actual y resolverlo a texto legible
+        current_question = state.get("question", "")
+        
+        # Importar el mapping para resolver la pregunta
+        from prompts.greeting_prompts import GREETING_BY_TYPE
+        
+        # Resolver pregunta actual a texto legible
+        question_text = ""
+        if current_question:
+            mapping = GREETING_BY_TYPE.get(current_question)
+            if isinstance(mapping, dict):
+                # Si el mapping tiene "question", usar ese campo
+                question_text = mapping.get("question", current_question)
+            elif isinstance(mapping, str):
+                question_text = mapping
+            else:
+                question_text = current_question
+        
+        if not question_text:
+            question_text = "tu plan de retiro"
+        
+        print(f"[Confirmation] Pregunta: {question_text}")
+        print(f"[Confirmation] Razón: {reason}")
+        
+        # Crear el prompt de confirmación con contexto
+        confirmation_prompt = CONFIRMATION_PROMPT.format(
+            question=question_text,
+            reason=reason
+        )
         
         # Preparar mensajes para el modelo
         system_message = SystemMessage(content=confirmation_prompt)
