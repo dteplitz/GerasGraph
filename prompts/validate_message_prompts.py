@@ -23,6 +23,9 @@ Tu tarea es analizar el último mensaje del usuario y determinar si está relaci
 - Temas completamente no relacionados (deportes, clima, recetas, etc.)
 - Preguntas sobre otros dominios sin relación con finanzas
 - Mensajes ofensivos o spam
+- Mensajes que contienen enlaces/links/URLs (http://, https://, www., .com, .org, etc.)
+
+**IMPORTANTE: Si el mensaje contiene cualquier tipo de enlace o URL, debe considerarse OFF-TOPIC automáticamente.**
 
 Debes responder ÚNICAMENTE con un objeto JSON en el siguiente formato:
 {{"onTopic": true}} o {{"onTopic": false}}
