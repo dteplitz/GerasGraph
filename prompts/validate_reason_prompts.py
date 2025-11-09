@@ -59,11 +59,12 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 {{"has_response": 0, "reason": null}} si la respuesta es vaga o no especifica un monto
 
 ## CRITERIOS PARA RESPUESTA VÁLIDA (has_response: 1):
-✅ Extraer el monto exacto mencionado:
+✅ Extraer el monto exacto mencionado (todos los montos se asumen en USD):
 - "10 millones" → {{"has_response": 1, "reason": "10000000"}}
-- "5000000 pesos" → {{"has_response": 1, "reason": "5000000"}}
+- "5000 dolares" → {{"has_response": 1, "reason": "5000"}}
 - "1M" → {{"has_response": 1, "reason": "1000000"}}
-- "USD 50000" → {{"has_response": 1, "reason": "50000"}}
+- "USD 5000" → {{"has_response": 1, "reason": "5000"}}
+- "5000 dólares" → {{"has_response": 1, "reason": "5000"}}
 - "10M en 20 años" → {{"has_response": 1, "reason": "10000000"}}
 
 ## CRITERIOS PARA RESPUESTA INVÁLIDA (has_response: 0):
@@ -71,7 +72,9 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 ❌ Sin montos: "lo que pueda", "veremos"
 ❌ Respuestas genéricas: "ok", "bien", "después veo"
 
-NOTA: Siempre devolver el monto como número sin símbolos de moneda ni puntos/comas.
+NOTA: 
+1. Siempre devolver el monto como número sin símbolos de moneda ni puntos/comas.
+2. Todos los montos se interpretan en dólares estadounidenses (USD).
 
 RESPUESTA:"""
 
@@ -86,8 +89,8 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 {{"has_response": 0, "reason": null}} si la respuesta es vaga o no especifica un monto
 
 ## CRITERIOS PARA RESPUESTA VÁLIDA (has_response: 1):
-✅ Extraer el monto mensual exacto:
-- "300000 por mes" → {{"has_response": 1, "reason": "300000"}}
+✅ Extraer el monto mensual exacto (todos los montos se asumen en USD):
+- "3000 por mes" → {{"has_response": 1, "reason": "3000"}}
 - "5000 mensuales" → {{"has_response": 1, "reason": "5000"}}
 - "USD 2000 mensuales" → {{"has_response": 1, "reason": "2000"}}
 - "60000 anuales" → {{"has_response": 1, "reason": "5000"}} (dividir entre 12)
@@ -101,6 +104,7 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 NOTA: 
 1. Siempre devolver el monto como número sin símbolos de moneda ni puntos/comas
 2. Si el monto es anual, dividirlo entre 12 para obtener el valor mensual
+3. Todos los montos se interpretan en dólares estadounidenses (USD)
 
 RESPUESTA:"""
 
@@ -146,10 +150,11 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 {{"has_response": 0, "reason": null}} si la respuesta es vaga o no especifica un monto
 
 ## CRITERIOS PARA RESPUESTA VÁLIDA (has_response: 1):
-✅ Extraer el monto exacto mencionado:
-- "100000 pesos" → {{"has_response": 1, "reason": "100000"}}
+✅ Extraer el monto exacto mencionado (todos los montos se asumen en USD):
+- "100000" → {{"has_response": 1, "reason": "100000"}}
 - "1M" → {{"has_response": 1, "reason": "1000000"}}
 - "USD 50000" → {{"has_response": 1, "reason": "50000"}}
+- "50000 dólares" → {{"has_response": 1, "reason": "50000"}}
 - "500K" → {{"has_response": 1, "reason": "500000"}}
 - "nada/cero/0" → {{"has_response": 1, "reason": "0"}}
 
@@ -161,6 +166,7 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 NOTA: 
 1. Siempre devolver el monto como número sin símbolos de moneda ni puntos/comas
 2. Si el usuario indica que no tiene monto inicial, devolver "0"
+3. Todos los montos se interpretan en dólares estadounidenses (USD)
 
 RESPUESTA:"""
 
@@ -175,10 +181,11 @@ INSTRUCCIÓN: Responde ÚNICAMENTE con un JSON en este formato exacto:
 {{"has_response": 0, "reason": null}} si la respuesta es vaga o no especifica un monto
 
 ## CRITERIOS PARA RESPUESTA VÁLIDA (has_response: 1):
-✅ Extraer el monto mensual exacto:
-- "50000 por mes" → {{"has_response": 1, "reason": "50000"}}
+✅ Extraer el monto mensual exacto (todos los montos se asumen en USD):
+- "5000 por mes" → {{"has_response": 1, "reason": "5000"}}
 - "1000 mensuales" → {{"has_response": 1, "reason": "1000"}}
 - "USD 500 al mes" → {{"has_response": 1, "reason": "500"}}
+- "500 dólares mensuales" → {{"has_response": 1, "reason": "500"}}
 - "12000 anuales" → {{"has_response": 1, "reason": "1000"}} (dividir entre 12)
 - "nada/cero/0" → {{"has_response": 1, "reason": "0"}}
 
@@ -191,6 +198,7 @@ NOTA:
 1. Siempre devolver el monto como número sin símbolos de moneda ni puntos/comas
 2. Si el monto es anual, dividirlo entre 12 para obtener el valor mensual
 3. Si el usuario indica que no puede aportar, devolver "0"
+4. Todos los montos se interpretan en dólares estadounidenses (USD)
 
 RESPUESTA:"""
 

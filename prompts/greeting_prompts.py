@@ -18,11 +18,12 @@ GREETING_BY_TYPE = {
         "greeting": (
             "¡Hola! Vamos a comenzar a armar plan de retiro.\n"
             "Lo primero es elegir tu tipo de plan. Tenés tres opciones:\n\n"
-            "Monto final → definís cuánto dinero querés tener acumulado al final del plazo. Ej: \"quiero llegar a 10 millones en 20 años\".\n\n"
-            "Renta → pensás en términos de ingresos mensuales cuando ya no trabajes. Ej: \"quiero cobrar 300.000 por mes\".\n\n"
+            "Monto final → definís cuánto dinero querés tener acumulado al final del plazo. Ej: \"quiero llegar a 1 millon USD en 20 años\".\n\n"
+            "Renta → pensás en términos de ingresos mensuales cuando ya no trabajes. Ej: \"quiero cobrar 3000 USD por mes\".\n\n"
             "Duración → elegís el tiempo que querés invertir (por ejemplo 15 años) y vemos cuánto podrías acumular según lo que aportes.\n\n"
             "Elegí la opción que más se parezca a cómo imaginás tu futuro. No te preocupes, después vas a poder modificar todo lo que quieras.\n\n"
-            "Y si no lo tenés del todo claro, podés preguntarme lo que quieras — estoy acá para ayudarte a decidir."
+            "Y si no lo tenés del todo claro, podés preguntarme lo que quieras — estoy acá para ayudarte a decidir.\n\n"
+            "Nota: Todos los montos se manejan en dólares estadounidenses (USD)."
         ),
         "question": "¿Qué tipo de plan te gustaría elegir? Podés elegir Monto final, Renta o Duración."
     },
@@ -31,16 +32,16 @@ GREETING_BY_TYPE = {
     QuestionType.OBJETIVO_MONTO_FINAL.value: {
         "greeting": (
             "Perfecto, trabajemos con Monto final.\n"
-            "Decime a cuánto querés llegar al final del período (por ej.: 10 millones, 50.000)."
+            "Decime a cuánto querés llegar al final del período en USD (por ej.: 1 millon, 50.000)."
         ),
-        "question": "¿Cuál es tu monto final objetivo?"
+        "question": "¿Cuál es tu monto final objetivo en USD?"
     },
     QuestionType.OBJETIVO_RENTA.value: {
         "greeting": (
             "Genial, trabajemos con Renta.\n"
-            "Contame qué ingreso mensual te gustaría recibir (por ej.: 300.000 por mes, 1.000 mensuales)."
+            "Contame qué ingreso mensual te gustaría recibir en USD (por ej.: 3000 por mes, 1000 mensuales)."
         ),
-        "question": "¿Qué ingreso mensual te gustaría recibir?"
+        "question": "¿Qué ingreso mensual te gustaría recibir en USD?"
     },
     QuestionType.OBJETIVO_DURACION.value: {
         "greeting": (
@@ -53,30 +54,30 @@ GREETING_BY_TYPE = {
     QuestionType.MONTO_INICIAL.value: {
         "greeting": (
             "Ahora necesito saber con qué monto inicial contás para arrancar.\n"
-            "Puede ser cualquier valor, incluso cero si arrancás de cero.\n"
-            "Por ejemplo: 100.000, 1M, 500K, 5000, o simplemente 0 si no tenés monto inicial."
+            "Puede ser cualquier valor en USD, incluso cero si arrancás de cero.\n"
+            "Por ejemplo: 100.000, 10.000 o simplemente 0 si no tenés monto inicial."
         ),
-        "question": "¿Con qué monto inicial contás para empezar?"
+        "question": "¿Con qué monto inicial en USD contás para empezar?"
     },
     QuestionType.APORTE_MENSUAL.value: {
         "greeting": (
             "¿Cuánto podrías aportar mensualmente al plan?\n"
-            "Pensá en un monto que puedas mantener de forma constante.\n"
-            "Por ejemplo: 50.000 por mes, 1000 mensuales, o si preferís podés decirme un monto anual y lo dividimos en 12."
+            "Pensá en un monto en USD que puedas mantener de forma constante.\n"
+            "Por ejemplo: 500 por mes, 1000 mensuales, o si preferís podés decirme un monto anual y lo dividimos en 12."
         ),
-        "question": "¿Cuánto podés aportar por mes?"
+        "question": "¿Cuánto podés aportar por mes en USD?"
     }
 }
 
 # Mensaje de bienvenida legacy (por compatibilidad)
 GREETING_MESSAGE = GREETING_BY_TYPE[QuestionType.TIPO_OBJETIVO.value]["greeting"]
-# Mensaje de bienvenida inicial
+# Mensaje de bienvenida inicial (comentado - usar GREETING_BY_TYPE en su lugar)
 #GREETING_MESSAGE = """¡Hola! Vamos a comenzar a armar plan de retiro.
 #Lo primero es elegir tu tipo de plan. Tenés tres opciones:
 
-#Monto final → definís cuánto dinero querés tener acumulado al final del plazo. Ej: "quiero llegar a 10 millones en 20 años".
+#Monto final → definís cuánto dinero querés tener acumulado al final del plazo. Ej: "quiero llegar a 1 millon USD en 20 años".
 
-#Renta → pensás en términos de ingresos mensuales cuando ya no trabajes. Ej: "quiero cobrar 300.000 por mes".
+#Renta → pensás en términos de ingresos mensuales cuando ya no trabajes. Ej: "quiero cobrar 3000 USD por mes".
 
 #Duración → elegís el tiempo que querés invertir (por ejemplo 15 años) y vemos cuánto podrías acumular según lo que aportes.
 
