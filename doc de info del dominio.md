@@ -16,7 +16,7 @@ Atesorar es guardar dinero sin ponerlo a trabajar, es decir sin generar interés
 
 ## [MECANISMO] La magia del interés compuesto
 
-Al ahorrar invirtiendo, el interés compuesto entra en juego. Esto hace que poco dinero ahora se convierta en mucho en el futuro. La fórmula es VF = VP*(1+r)^n, siendo VF: valor futuro, VP: valor presente, r: tasa de interés, y n: periodo en años. Ejemplo: hoy en día se invierte 1,000 USD a una tasa de 5% anual (conservadora) a 40 años, resultando en 7,000 USD al final. Es decir que gracias al paso del tiempo se obtuvo 7 veces lo invertido inicialmente.
+Al ahorrar invirtiendo, el interés compuesto entra en juego. Esto hace que poco dinero ahora se convierta en mucho en el futuro. La fórmula es VF = VP*(1+r)^n, siendo VF: valor futuro, VP: valor presente, r: tasa de interés, y n: periodo en años. Ejemplo: hoy en día se invierte 1,000 USD a una tasa de 6% anual (conservadora) a 40 años, resultando en 10,000 USD al final. Es decir que gracias al paso del tiempo se obtuvo 10 veces lo invertido inicialmente.
 
 ## [HORIZONTE] La importancia de empezar temprano
 
