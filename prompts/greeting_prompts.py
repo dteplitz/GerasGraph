@@ -32,7 +32,7 @@ GREETING_BY_TYPE = {
     QuestionType.OBJETIVO_MONTO_FINAL.value: {
         "greeting": (
             "Perfecto, trabajemos con Monto final.\n"
-            "Decime a cuánto querés llegar al final del período en USD (por ej.: 1 millon, 50.000)."
+            "Decime a cuánto querés llegar al final del período en USD (por ej.: 1 millón, 50.000)."
         ),
         "question": "¿Cuál es tu monto final objetivo en USD?"
     },
@@ -75,7 +75,7 @@ GREETING_MESSAGE = GREETING_BY_TYPE[QuestionType.TIPO_OBJETIVO.value]["greeting"
 #GREETING_MESSAGE = """¡Hola! Vamos a comenzar a armar plan de retiro.
 #Lo primero es elegir tu tipo de plan. Tenés tres opciones:
 
-#Monto final → definís cuánto dinero querés tener acumulado al final del plazo. Ej: "quiero llegar a 1 millon USD en 20 años".
+#Monto final → definís cuánto dinero querés tener acumulado al final del plazo. Ej: "quiero llegar a 1 millón USD en 20 años".
 
 #Renta → pensás en términos de ingresos mensuales cuando ya no trabajes. Ej: "quiero cobrar 3000 USD por mes".
 
