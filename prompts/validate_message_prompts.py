@@ -4,7 +4,7 @@ Prompts para el agente ValidateMessage.
 Este módulo contiene los mensajes utilizados cuando un mensaje está fuera de tópico.
 """
 
-OFF_TOPIC_MESSAGE = "Mensaje fuera de topico, no lo puedo responder"
+OFF_TOPIC_MESSAGE = "Mensaje fuera de tópico, no lo puedo responder"
 
 VALIDATE_MESSAGE_SYSTEM_PROMPT = """Eres un asistente que valida si un mensaje del usuario está dentro del tópico de una conversación sobre finanzas personales y planificación financiera.
 
