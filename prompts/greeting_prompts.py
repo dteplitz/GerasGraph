@@ -16,14 +16,14 @@ GREETING_BY_TYPE = {
     # tipo_objetivo: saludo largo + pregunta corta
     QuestionType.TIPO_OBJETIVO.value: {
         "greeting": (
-            "¡Hola! Vamos a comenzar a armar plan de retiro.\n"
-            "Lo primero es elegir tu tipo de plan. Tenés tres opciones:\n\n"
-            "Monto final → definís cuánto dinero querés tener acumulado al final del plazo. Ej: \"quiero llegar a 1 millon USD en 20 años\".\n\n"
-            "Renta → pensás en términos de ingresos mensuales cuando ya no trabajes. Ej: \"quiero cobrar 3000 USD por mes\".\n\n"
-            "Duración → elegís el tiempo que querés invertir (por ejemplo 15 años) y vemos cuánto podrías acumular según lo que aportes.\n\n"
-            "Elegí la opción que más se parezca a cómo imaginás tu futuro. No te preocupes, después vas a poder modificar todo lo que quieras.\n\n"
-            "Y si no lo tenés del todo claro, podés preguntarme lo que quieras — estoy acá para ayudarte a decidir.\n\n"
-            "Nota: Todos los montos se manejan en dólares estadounidenses (USD)."
+            "¡Hola! Vamos a comenzar a armar tu **plan de retiro**.\n\n"
+            "Lo primero es elegir tu tipo de plan. Tenés **tres opciones**:\n\n"
+            "**Monto final** → definís cuánto dinero querés tener acumulado al final del plazo.\n\n"
+            "**Renta** → pensás en términos de ingresos mensuales cuando ya no trabajes.\n\n"
+            "**Duración** → elegís el tiempo que querés invertir y vemos cuánto podrías acumular según lo que aportes.\n\n"
+            "No te preocupes, después vas a poder modificar todo lo que quieras.\n\n"
+            "Podés preguntarme lo que quieras — estoy acá para ayudarte a decidir.\n\n"
+            "**Nota:** Todos los montos se manejan en dólares estadounidenses (USD)."
         ),
         "question": "¿Qué tipo de plan te gustaría elegir? Podés elegir Monto final, Renta o Duración."
     },
